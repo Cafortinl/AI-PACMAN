@@ -6,13 +6,36 @@
         Mauricio Aguilera
         Jamil García
 '''
+import pygame
+import sys
+
+
+pygame.init()
+
+FPS = 60
+FramePerSec = pygame.time.Clock()
+
+# Predefined some colors
+BLUE = (0, 0, 255)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+YELLOW = (255, 255, 0)
+
+# Screen information
+SCREEN_WIDTH = 600
+SCREEN_HEIGHT = 600
+
+DISPLAYSURF = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+DISPLAYSURF.fill(WHITE)
+pygame.display.set_caption("AI-PACMAN")
 
 
 class Pacman():
     def __init__(self, ycoor, xcoor):
         self.x = xcoor
         self.y = ycoor
-        print('PAC-MAN created at:', self.x, self.y)
 
     def move():
         pass
@@ -66,19 +89,37 @@ def loadMap(levelPath):
 
 
 def drawMap():
+
+    gridW = SCREEN_WIDTH/len(mapGrid[0])
+    gridH = SCREEN_HEIGHT/len(mapGrid)
+    pmW = gridW / 2
+    pmH = gridH / 2
+    piW = gridW / 4
+    piH = gridH / 4
+
+    # Temporal code, just for tests. Eventually we'll draw images containing sprites.
     for i in range(len(mapGrid)):
         for j in range(len(mapGrid[0])):
             if i == pacman.y and j == pacman.x:
-                print('<', end='')
+                pygame.draw.rect(DISPLAYSURF, YELLOW, pygame.Rect(j * gridW + (gridW - pmW)/2, i * gridH + (gridH - pmH)/2, pmW, pmH))
+            elif mapGrid[i][j] == '.':
+                pygame.draw.rect(DISPLAYSURF, WHITE, pygame.Rect(j * gridW + (gridW - piW)/2, i * gridH + (gridH - piH)/2, piW, piH))
             else:
-                print(mapGrid[i][j], end='')
-
-        print()
+                pygame.draw.rect(DISPLAYSURF, BLUE, pygame.Rect(j * gridW, i * gridH, gridW, gridH))
 
 
 def main():
     loadMap('./levels/level2.txt')
-    drawMap()
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            DISPLAYSURF.fill(BLACK)
+            drawMap()
+            pygame.display.update()
+            FramePerSec.tick(FPS)
 
 
 if __name__ == '__main__':
