@@ -8,6 +8,8 @@
 '''
 import pygame
 import sys
+import math
+
 
 
 pygame.init()
@@ -30,6 +32,7 @@ SCREEN_HEIGHT = 600
 DISPLAYSURF = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 DISPLAYSURF.fill(WHITE)
 pygame.display.set_caption("AI-PACMAN")
+pi = math.pi
 
 
 class Pacman():
@@ -100,16 +103,38 @@ def drawMap():
     # Temporal code, just for tests. Eventually we'll draw images containing sprites.
     for i in range(len(mapGrid)):
         for j in range(len(mapGrid[0])):
+            if mapGrid[i][j] == '.':
+                pygame.draw.rect(DISPLAYSURF, WHITE, pygame.Rect(j * gridW+(gridW/2), i * gridH+(gridH/2), piW*2, piH))
+            if mapGrid[i][j] == '*':
+                pygame.draw.rect(DISPLAYSURF, WHITE, pygame.Rect(j * gridW+(gridW/2), i * gridH+(gridH/2), piW*4, piH*2))
+            if mapGrid[i][j] =='|':
+                pygame.draw.line(DISPLAYSURF, BLUE, [j * gridW+(gridW/2), i * gridH], [j * gridW+(gridW/2), i * gridH + gridH], 5)
+            if mapGrid[i][j] == '_':
+                pygame.draw.line(DISPLAYSURF, BLUE, [j * gridW, i * gridH+(gridH/2)], [j * gridW +gridW*2, i * gridH+(gridH/2)], 5)
+            if i == pacman.y and j == pacman.x:
+                pygame.draw.rect(DISPLAYSURF, YELLOW, pygame.Rect(j * gridW+(gridW/2), i * gridH+(gridH/2), pmW, pmH))
+            if mapGrid[i][j] == '}':
+                pygame.draw.arc(DISPLAYSURF, BLUE, [(j * gridW - (gridW * 0.4)) - 2, (i * gridH + (gridH/2)), gridW, gridH], 0, pi / 2, 3)
+            if mapGrid[i][j] == '{':
+                pygame.draw.arc(DISPLAYSURF, BLUE, [(j * gridW + (gridW/2)), (i * gridH + (gridH/2)), gridW, gridH], pi / 2, pi, 3)
+            if mapGrid[i][j] == '(':
+                pygame.draw.arc(DISPLAYSURF, BLUE, [(j * gridW + (gridW/2)), (i * gridH - (gridH* 0.4)), gridW, gridH], pi, 3 * pi / 2, 3)
+            if mapGrid[i][j] == ')':
+                pygame.draw.arc(DISPLAYSURF, BLUE, [(j * gridW - (gridW * 0.4)) - 2, (i * gridH - (gridH * 0.4)), gridW, gridH], 3 * pi / 2, 2 * pi, 3)
+            if mapGrid[i][j] =='+':
+                pygame.draw.line(DISPLAYSURF, WHITE, (j * gridW, i * gridH + (gridH/2)), (j * gridW + gridW*2, i * gridH + (gridH/2)), 3)
+            '''
             if i == pacman.y and j == pacman.x:
                 pygame.draw.rect(DISPLAYSURF, YELLOW, pygame.Rect(j * gridW + (gridW - pmW)/2, i * gridH + (gridH - pmH)/2, pmW, pmH))
             elif mapGrid[i][j] == '.':
                 pygame.draw.rect(DISPLAYSURF, WHITE, pygame.Rect(j * gridW + (gridW - piW)/2, i * gridH + (gridH - piH)/2, piW, piH))
             else:
                 pygame.draw.rect(DISPLAYSURF, BLUE, pygame.Rect(j * gridW, i * gridH, gridW, gridH))
+            '''
 
 
 def main():
-    loadMap('./levels/level2.txt')
+    loadMap('./levels/level3.txt')
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
