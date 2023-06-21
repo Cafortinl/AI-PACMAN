@@ -37,9 +37,6 @@ class Pacman():
         self.x = xcoor
         self.y = ycoor
 
-    def move():
-        pass
-
 
 class Ghost():
     def __init__(self):
@@ -64,6 +61,18 @@ pacman = Pacman
 #
 #     destiny: an (x, y) tuple representing the element's goal
 def pathfind(origin, destiny):
+    pass
+
+def move():
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT]:
+        pacman.x -= 1
+    if keys[pygame.K_RIGHT]:
+        pacman.x += 1
+    if keys[pygame.K_UP]:
+        pacman.y -= 1
+    if keys[pygame.K_DOWN]:
+        pacman.y += 1
     pass
 
 
@@ -114,12 +123,13 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                sys.exit()
-
+                sys.exit() 
+            move()
             DISPLAYSURF.fill(BLACK)
             drawMap()
             pygame.display.update()
             FramePerSec.tick(FPS)
+        
 
 
 if __name__ == '__main__':
