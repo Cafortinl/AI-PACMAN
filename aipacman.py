@@ -105,9 +105,77 @@ class Pacman():
     def __init__(self, xcoor, ycoor):
         self.x = xcoor
         self.y = ycoor
+        self.dirs = ['up', 'right', 'down', 'left']
+        self.currDir = None
+        self.speed = 3
 
     def move(self):
-        pass
+        if self.currDir == 'up':
+            self.y -= self.speed
+            if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
+                self.y += self.speed
+                nx, ny = int(self.x/gridW), int(self.y/gridH)
+                self.x = nx * gridW + (gridW - pacmanW)/2
+                self.y = ny * gridH + (gridH - pacmanH)/2
+                self.currDir = None
+        elif self.currDir == 'right':
+            self.x += self.speed
+            if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
+                self.x -= self.speed
+                nx, ny = int(self.x/gridW), int(self.y/gridH)
+                self.x = nx * gridW + (gridW - pacmanW)/2
+                self.y = ny * gridH + (gridH - pacmanH)/2
+                self.currDir = None
+        elif self.currDir == 'down':
+            self.y += self.speed
+            if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
+                self.y -= self.speed
+                nx, ny = int(self.x/gridW), int(self.y/gridH)
+                self.x = nx * gridW + (gridW - pacmanW)/2
+                self.y = ny * gridH + (gridH - pacmanH)/2
+                self.currDir = None
+        elif self.currDir == 'left':
+            self.x -= self.speed
+            if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
+                self.x += self.speed
+                nx, ny = int(self.x/gridW), int(self.y/gridH)
+                self.x = nx * gridW + (gridW - pacmanW)/2
+                self.y = ny * gridH + (gridH - pacmanH)/2
+                self.currDir = None
+
+    def changeDir(self):
+        keys = pygame.key.get_pressed()
+
+        prevDir = self.currDir
+
+        if keys[pygame.K_LEFT]:
+            self.currDir = 'left'
+        if keys[pygame.K_RIGHT]:
+            self.currDir = 'right'
+        if keys[pygame.K_UP]:
+            self.currDir = 'up'
+        if keys[pygame.K_DOWN]:
+            self.currDir = 'down'
+
+        # node = mapGraph.getNode(int(self.x/gridW), int(self.y/gridH))
+
+        # if node is None:
+        #     if self.currDir == 'up':
+        #         self.y += self.speed
+        #     elif self.currDir == 'right':
+        #         self.x -= self.speed
+        #     elif self.currDir == 'down':
+        #         self.y -= self.speed
+        #     elif self.currDir == 'left':
+        #         self.x += self.speed
+
+        # if self.currDir not in list(node.getReachableNeighbors().keys()):
+        #     self.currDir = prevDir
+
+        # if self.currDir != prevDir:
+        #     nx, ny = int(self.x/gridW), int(self.y/gridH)
+        #     self.x = nx * gridW + (gridW - pacmanW)/2
+        #     self.y = ny * gridH + (gridH - pacmanH)/2
 
     def transpose(self):
         self.x = self.x * gridW + (gridW/2)
@@ -128,45 +196,44 @@ class Ghost():
         self.currDir = None
 
     def move(self):
-        global rx
-        global ry
+        global pacman
 
         speed = 3
 
-        # if len(self.destinList) < 1:
-        #     self.destinList = pathfind(mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)), mapGraph.getNode(rx, ry))
+        if len(self.destinList) < 1:
+            self.destinList = pathfind(mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)), mapGraph.getNode(int(pacman.x/gridW), int(pacman.y/gridH)))
 
-        pygame.draw.rect(DISPLAYSURF, YELLOW, pygame.Rect(rx * gridW, ry * gridH, pointW, pointH))
+        # pygame.draw.rect(DISPLAYSURF, YELLOW, pygame.Rect(rx * gridW, ry * gridH, pointW, pointH))
 
-        # if len(self.destinList) != 0 and mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) == self.destinList[0][1]:
-        #     nDir = self.destinList[0][0]
-        #     if nDir is not None:
-        #         self.currDir = nDir
-        #     del self.destinList[0]
-        #     nx, ny = int(self.x/gridW), int(self.y/gridH)
-        #     self.x = nx * gridW + (gridW - pacmanW)/2
-        #     self.y = ny * gridH + (gridH - pacmanH)/2
-
-        prevDir = self.currDir
-        currNode = mapGraph.getNode(int(self.x/gridW), int(self.y/gridH))
-        bestDist = manhattanDistance(currNode.x, rx, currNode.y, ry)
-        reachables = currNode.getReachableNeighbors()
-
-        for neighbor in reachables.keys():
-            node = reachables[neighbor]
-            print(bestDist,end='')
-            if manhattanDistance(node.x, rx, node.y, ry) < bestDist and (prevDir is None or abs(self.dirs.index(prevDir) - self.dirs.index(neighbor)) != 2):
-                print('vs', manhattanDistance(node.x, rx, node.y, ry))
-                bestDist = manhattanDistance(node.x, rx, node.y, ry)
-                self.currDir = neighbor
-
-        if self.currDir not in reachables.keys():
-            self.currDir = list(reachables.keys())[random.randint(0, len(reachables.keys()) - 1)]
-
-        if self.currDir != prevDir:
+        if len(self.destinList) != 0 and mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) == self.destinList[0][1]:
+            nDir = self.destinList[0][0]
+            if nDir is not None:
+                self.currDir = nDir
+            del self.destinList[0]
             nx, ny = int(self.x/gridW), int(self.y/gridH)
             self.x = nx * gridW + (gridW - pacmanW)/2
             self.y = ny * gridH + (gridH - pacmanH)/2
+
+        # prevDir = self.currDir
+        # currNode = mapGraph.getNode(int(self.x/gridW), int(self.y/gridH))
+        # bestDist = manhattanDistance(currNode.x, pacman.x, currNode.y, pacman.y)
+        # reachables = currNode.getReachableNeighbors()
+
+        # for neighbor in reachables.keys():
+        #     node = reachables[neighbor]
+        #     print(bestDist,end=' ')
+        #     if manhattanDistance(node.x, pacman.x, node.y, pacman.y) < bestDist and (prevDir is None or abs(self.dirs.index(prevDir) - self.dirs.index(neighbor)) != 2):
+        #         print('vs', manhattanDistance(node.x, pacman.x, node.y, pacman.y))
+        #         bestDist = manhattanDistance(node.x, pacman.x, node.y, pacman.y)
+        #         self.currDir = neighbor
+
+        # if self.currDir not in reachables.keys():
+        #     self.currDir = list(reachables.keys())[random.randint(0, len(reachables.keys()) - 1)]
+
+        # if self.currDir != prevDir:
+        #     nx, ny = int(self.x/gridW), int(self.y/gridH)
+        #     self.x = nx * gridW + (gridW - pacmanW)/2
+        #     self.y = ny * gridH + (gridH - pacmanH)/2
 
         if self.currDir == 'up':
             self.y -= speed
@@ -311,7 +378,7 @@ def loadMap(levelPath):
 
         for j in range(int(dimArr[1])):
             if line[j] == 'P':
-                mapGrid[i].append(' ')
+                mapGrid[i].append('.')
                 pacman = Pacman(j, i)
             elif line[j] != '\n':
                 mapGrid[i].append(line[j])
@@ -323,7 +390,7 @@ def isWalkable(i, j):
     tile = mapGrid[i][j]
     if tile == '.' or tile == '*' or tile == '#':
         return True
-    if tile == ' ' and j - 1 > 0 and j + 1 < len(mapGrid[0]) and mapGrid[i][j-1] == '.' and mapGrid[i][j+1] == '.':
+    if tile == ' ' and j - 1 > 0 and j + 1 < len(mapGrid[0]) and ((mapGrid[i][j-1] == '.' or mapGrid[i][j+1] == '.') or (mapGrid[i][j-1] == '#' or mapGrid[i][j+1] == '#')):
         return True
     return False
 
@@ -460,10 +527,14 @@ def main():
 
         DISPLAYSURF.fill(BLACK)
         drawMap()
+        pacman.changeDir()
+        pacman.move()
         pacman.draw()
 
-        if rx != -1 and ry != -1:
-            red.move()
+        # for node in mapGraph.nodes:
+        #     pygame.draw.rect(DISPLAYSURF, RED, pygame.Rect(node.x * gridW+(gridW/2), node.y * gridH+(gridH/2), pointW*4, pointH*2))
+
+        red.move()
         red.draw()
         pygame.display.update()
         FramePerSec.tick(FPS)
