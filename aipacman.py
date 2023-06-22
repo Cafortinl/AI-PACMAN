@@ -186,7 +186,7 @@ class Pacman():
 
 
 class Ghost():
-    def __init__(self, x, y, color, level, cDir):
+    def __init__(self, x, y, color, level, cDir, target):
         self.destinList = []
         self.x = x
         self.y = y
@@ -194,16 +194,17 @@ class Ghost():
         self.level = level
         self.dirs = ['up', 'right', 'down', 'left']
         self.currDir = None
+        self.targetfn = target
 
     def move(self):
         global pacman
 
         speed = 3
 
-        if len(self.destinList) < 1:
-            self.destinList = pathfind(mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)), mapGraph.getNode(int(pacman.x/gridW), int(pacman.y/gridH)))
+        px, py = self.targetfn()
 
-        # pygame.draw.rect(DISPLAYSURF, YELLOW, pygame.Rect(rx * gridW, ry * gridH, pointW, pointH))
+        if len(self.destinList) < 1:
+            self.destinList = pathfind(mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)), mapGraph.getNode(px, py))
 
         if len(self.destinList) != 0 and mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) == self.destinList[0][1]:
             nDir = self.destinList[0][0]
@@ -390,7 +391,7 @@ def isWalkable(i, j):
     tile = mapGrid[i][j]
     if tile == '.' or tile == '*' or tile == '#':
         return True
-    if tile == ' ' and j - 1 > 0 and j + 1 < len(mapGrid[0]) and ((mapGrid[i][j-1] == '.' or mapGrid[i][j+1] == '.') or (mapGrid[i][j-1] == '#' or mapGrid[i][j+1] == '#')):
+    if tile == ' ' and j - 1 > 0 and j + 1 < len(mapGrid[0]) and ((mapGrid[i][j-1] == '.' or mapGrid[i][j+1] == '.') or (mapGrid[i][j-1] == '#' or mapGrid[i][j+1] == '#') or (mapGrid[i][j-1] == '*' or mapGrid[i][j+1] == '*')):
         return True
     return False
 
@@ -506,11 +507,39 @@ def drawMap():
 rx, ry = -1, -1
 
 
+def redTarget():
+    return int(pacman.x/gridW), int(pacman.y/gridH)
+
+
+def pinkTarget():
+    x, y = int(pacman.x/gridW), int(pacman.y/gridH)
+    pmDir = pacman.currDir
+
+    if pmDir == 'up':
+        y -= 1
+    elif pmDir == 'right':
+        x += 1
+    elif pmDir == 'down':
+        y += 1
+    elif pmDir == 'left':
+        x -= 1
+
+    return x, y
+
+def cyanTarget():
+    pass
+
+def orangeTarget():
+    pass
+
+
 def main():
     loadMap('./levels/level3.txt')
     createMapGraph(findFirstPill())
-    red = Ghost(4, 2, RED, 1, 2)
+    red = Ghost(4, 2, RED, 1, 2, redTarget)
+    yellow = Ghost(54, 2, GREEN, 1, 2, pinkTarget)
     red.transpose()
+    yellow.transpose()
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -527,6 +556,10 @@ def main():
 
         DISPLAYSURF.fill(BLACK)
         drawMap()
+        red.move()
+        yellow.move()
+        red.draw()
+        yellow.draw()
         pacman.changeDir()
         pacman.move()
         pacman.draw()
@@ -534,8 +567,6 @@ def main():
         # for node in mapGraph.nodes:
         #     pygame.draw.rect(DISPLAYSURF, RED, pygame.Rect(node.x * gridW+(gridW/2), node.y * gridH+(gridH/2), pointW*4, pointH*2))
 
-        red.move()
-        red.draw()
         pygame.display.update()
         FramePerSec.tick(FPS)
 
