@@ -27,7 +27,7 @@ YELLOW = (255, 255, 0)
 
 # Screen information
 SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+SCREEN_HEIGHT = 800
 
 # Drawing information
 gridW = 0
@@ -485,13 +485,13 @@ def drawMap():
             # if i == pacman.y and j == pacman.x:
             #     pygame.draw.rect(DISPLAYSURF, YELLOW, pygame.Rect(j * gridW+(gridW/2), i * gridH+(gridH/2), pacmanW, pacmanH))
             if mapGrid[i][j] == '}':
-                pygame.draw.arc(DISPLAYSURF, BLUE, [(j * gridW - (gridW * 0.4)) - 2, (i * gridH + (gridH/2)), gridW, gridH], 0, pi / 2, 3)
+                pygame.draw.arc(DISPLAYSURF, BLUE, [(j * gridW - (gridW * 0.4)) - 2, (i * gridH + (gridH/2)), gridW*1.3, gridH], 0, pi / 2, 5)
             if mapGrid[i][j] == '{':
-                pygame.draw.arc(DISPLAYSURF, BLUE, [(j * gridW + (gridW/2)), (i * gridH + (gridH/2)), gridW, gridH], pi / 2, pi, 3)
+                pygame.draw.arc(DISPLAYSURF, BLUE, [(j * gridW + (gridW/2)), (i * gridH + (gridH/2)), gridW*3, gridH], pi / 2, pi, 5)
             if mapGrid[i][j] == '(':
-                pygame.draw.arc(DISPLAYSURF, BLUE, [(j * gridW + (gridW/2)), (i * gridH - (gridH* 0.4)), gridW, gridH], pi, 3 * pi / 2, 3)
+                pygame.draw.arc(DISPLAYSURF, BLUE, [(j * gridW + (gridW/2)), (i * gridH - (gridH* 0.4)), gridW*3, gridH], pi, 3 * pi / 2, 5)
             if mapGrid[i][j] == ')':
-                pygame.draw.arc(DISPLAYSURF, BLUE, [(j * gridW - (gridW * 0.4)) - 2, (i * gridH - (gridH * 0.4)), gridW, gridH], 3 * pi / 2, 2 * pi, 3)
+                pygame.draw.arc(DISPLAYSURF, BLUE, [(j * gridW - (gridW * 0.4)) - 2, (i * gridH - (gridH * 0.4)), gridW*1.3, gridH], 3 * pi / 2, 2 * pi, 5)
             if mapGrid[i][j] =='+':
                 pygame.draw.line(DISPLAYSURF, WHITE, (j * gridW, i * gridH + (gridH/2)), (j * gridW + gridW*2, i * gridH + (gridH/2)), 3)
             '''
