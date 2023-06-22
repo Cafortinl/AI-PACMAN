@@ -8,6 +8,8 @@
 import pygame
 import sys
 import math
+import heapq
+import random
 
 
 pygame.init()
@@ -24,7 +26,7 @@ WHITE = (255, 255, 255)
 YELLOW = (255, 255, 0)
 
 # Screen information
-SCREEN_WIDTH = 600
+SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 
 # Drawing information
@@ -82,6 +84,9 @@ class Node():
     def getNeighbors(self):
         return self.neigbors
 
+    def getReachableNeighbors(self):
+        return {k: v for k, v in self.neigbors.items() if v is not None}
+
     def __str__(self):
         retStr = str(self.x) + ',' + str(self.y) + '\n'
         for key in self.neigbors.keys():
@@ -91,6 +96,9 @@ class Node():
                 retStr += '\t' + key + ': ' + 'None\n'
 
         return retStr
+
+    def getName(self):
+        return str(self.x) + ', ' + str(self.y)
 
 
 class Pacman():
@@ -110,20 +118,133 @@ class Pacman():
 
 
 class Ghost():
-    def __init__(self):
-        pass
+    def __init__(self, x, y, color, level, cDir):
+        self.destinList = []
+        self.x = x
+        self.y = y
+        self.color = color
+        self.level = level
+        self.dirs = ['up', 'right', 'down', 'left']
+        self.currDir = None
 
-    def move():
-        pass
+    def move(self):
+        global rx
+        global ry
 
-    def draw():
-        pass
+        speed = 3
+
+        # if len(self.destinList) < 1:
+        #     self.destinList = pathfind(mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)), mapGraph.getNode(rx, ry))
+
+        pygame.draw.rect(DISPLAYSURF, YELLOW, pygame.Rect(rx * gridW, ry * gridH, pointW, pointH))
+
+        # if len(self.destinList) != 0 and mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) == self.destinList[0][1]:
+        #     nDir = self.destinList[0][0]
+        #     if nDir is not None:
+        #         self.currDir = nDir
+        #     del self.destinList[0]
+        #     nx, ny = int(self.x/gridW), int(self.y/gridH)
+        #     self.x = nx * gridW + (gridW - pacmanW)/2
+        #     self.y = ny * gridH + (gridH - pacmanH)/2
+
+        prevDir = self.currDir
+        currNode = mapGraph.getNode(int(self.x/gridW), int(self.y/gridH))
+        bestDist = manhattanDistance(currNode.x, rx, currNode.y, ry)
+        reachables = currNode.getReachableNeighbors()
+
+        for neighbor in reachables.keys():
+            node = reachables[neighbor]
+            print(bestDist,end='')
+            if manhattanDistance(node.x, rx, node.y, ry) < bestDist and (prevDir is None or abs(self.dirs.index(prevDir) - self.dirs.index(neighbor)) != 2):
+                print('vs', manhattanDistance(node.x, rx, node.y, ry))
+                bestDist = manhattanDistance(node.x, rx, node.y, ry)
+                self.currDir = neighbor
+
+        if self.currDir not in reachables.keys():
+            self.currDir = list(reachables.keys())[random.randint(0, len(reachables.keys()) - 1)]
+
+        if self.currDir != prevDir:
+            nx, ny = int(self.x/gridW), int(self.y/gridH)
+            self.x = nx * gridW + (gridW - pacmanW)/2
+            self.y = ny * gridH + (gridH - pacmanH)/2
+
+        if self.currDir == 'up':
+            self.y -= speed
+        elif self.currDir == 'right':
+            self.x += speed
+        elif self.currDir == 'down':
+            self.y += speed
+        elif self.currDir == 'left':
+            self.x -= speed
+
+    def rotate(self, rotDir):
+        '''
+        self.dirs.index(self.currDir) + rotDir -> new index relative to the original position
+        + len(self.dirs) -> offsets negative values
+        % len(self.dirs) -> makes it so the new index is inside the list's range
+        '''
+        self.currDir = self.dirs[((self.dirs.index(self.currDir) + rotDir) + len(self.dirs)) % len(self.dirs)]
+
+    def transpose(self):
+        self.x = self.x * gridW + (gridW/2)
+        self.y = self.y * gridH + (gridH/2)
+
+    def draw(self):
+        pygame.draw.rect(DISPLAYSURF, self.color, pygame.Rect(self.x, self.y, pacmanW, pacmanH))
 
 
 # Level related globals
 mapGrid = []
 mapGraph = Graph()
 pacman = Pacman
+
+
+def euclideanDistance(x1, x2, y1, y2):
+    return math.sqrt(((x1 - x2)**2) + ((y1 - y2)**2))
+
+
+def manhattanDistance(x1, x2, y1, y2):
+    return abs(x1 - x2) + abs(y1 - y2)
+
+
+def straightenVisitOrder(visitOrder, origin, destiny):
+    path = []
+    dirArr = [None]
+
+    currNode = destiny
+
+    if destiny not in visitOrder:
+        return []
+
+    while currNode is not None:
+        path.append(currNode)
+        nNode = visitOrder[currNode]
+        if nNode is None:
+            break
+        nNNeighbors = nNode.getNeighbors()
+        dirArr.append(list(nNNeighbors.keys())[list(nNNeighbors.values()).index(currNode)])
+        currNode = nNode
+
+    path.reverse()
+    dirArr.reverse()
+
+    return list(path), list(dirArr)
+
+
+def pruneVisitOrder(visitOrder, dirs):
+    nVisitOrder = []
+    lastDir = None
+
+    for k in range(len(visitOrder)):
+        newDir = dirs[k]
+
+        if lastDir is None or lastDir != newDir:
+            lastDir = newDir
+            nVisitOrder.append((lastDir, visitOrder[k]))
+        else:
+            continue
+
+    return nVisitOrder
 
 
 # Pathfinding method that will be shared by both PAC-MAN's
@@ -135,8 +256,44 @@ pacman = Pacman
 #             position
 #
 #     destiny: an (x, y) tuple representing the element's goal
-def pathfind(origin, destiny):
-    pass
+#
+#     weightfn: a function to determine the weight of each node,
+#               defaults to None, so every node weights the same.
+def pathfind(origin, destiny, weightfn=None):
+    frontier = []
+    visitOrder = {}
+    pathCost = {}
+
+    insertCounter = 0
+    heapq.heappush(frontier, (0, insertCounter, origin))
+    visitOrder[origin] = None
+    pathCost[origin] = 0
+
+    while len(frontier) > 0:
+        currNode = heapq.heappop(frontier)[2]
+
+        if currNode == destiny:
+            break
+
+        for k in currNode.getReachableNeighbors().keys():
+            nextNode = currNode.getNeighbors()[k]
+
+            if weightfn is not None:
+                cost = pathCost[currNode] + weightfn(mapGraph.getNode(nextNode.x, nextNode.y))
+            else:
+                cost = pathCost[currNode] + 1
+
+            if nextNode not in pathCost or cost < pathCost[nextNode]:
+                pathCost[nextNode] = cost
+                nodePriority = cost + manhattanDistance(nextNode.x, destiny.x, nextNode.y, destiny.y)
+                insertCounter += 1
+                heapq.heappush(frontier, (nodePriority, insertCounter, nextNode))
+                visitOrder[nextNode] = currNode
+
+    retTuple = straightenVisitOrder(visitOrder, origin, destiny)
+    visitOrder, visitDirs = retTuple[0], retTuple[1]
+    visitOrder = pruneVisitOrder(visitOrder, visitDirs)
+    return visitOrder
 
 
 def loadMap(levelPath):
@@ -162,20 +319,24 @@ def loadMap(levelPath):
     updateDrawindDims()
 
 
-def isWalkable(tile):
+def isWalkable(i, j):
+    tile = mapGrid[i][j]
     if tile == '.' or tile == '*' or tile == '#':
+        return True
+    if tile == ' ' and j - 1 > 0 and j + 1 < len(mapGrid[0]) and mapGrid[i][j-1] == '.' and mapGrid[i][j+1] == '.':
         return True
     return False
 
 
-def findFirstWalkable():
+def findFirstPill():
     tempNode = Node
     firstNode = (-1, -1)
 
     for i in range(len(mapGrid)):
         if firstNode[0] == -1 and firstNode[1] == -1:
             for j in range(len(mapGrid[0])):
-                if isWalkable(mapGrid[i][j]):
+                if mapGrid[i][j] == '.':
+                    print('fount at', i, ',', j)
                     firstNode = (i, j)
                     break
 
@@ -188,41 +349,41 @@ def createMapGraph(node):
     i = node.y
     j = node.x
 
-    if i - 1 >= 0 and isWalkable(mapGrid[i - 1][j]) and mapGraph.getNode(j, i - 1) is None:
+    if i - 1 >= 0 and isWalkable(i - 1, j) and mapGraph.getNode(j, i - 1) is None:
         currNode = Node(j, i - 1, mapGrid[i - 1][j] == '.', mapGrid[i - 1][j] == '*')
         currNode.setNeighbor(node, 'down')
         mapGraph.addNode(currNode)
         createMapGraph(currNode)
 
-    if i + 1 < len(mapGrid) and isWalkable(mapGrid[i + 1][j]) and mapGraph.getNode(j, i + 1) is None:
+    if i + 1 < len(mapGrid) and isWalkable(i + 1, j) and mapGraph.getNode(j, i + 1) is None:
         currNode = Node(j, i + 1, mapGrid[i + 1][j] == '.', mapGrid[i + 1][j] == '*')
         currNode.setNeighbor(node, 'up')
         mapGraph.addNode(currNode)
         createMapGraph(currNode)
 
-    if j - 2 >= 0 and isWalkable(mapGrid[i][j - 2]) and mapGraph.getNode(j - 2, i) is None:
-        currNode = Node(j - 2, i, mapGrid[i][j - 2] == '.', mapGrid[i][j - 2] == '*')
+    if j - 1 >= 0 and isWalkable(i, j - 1) and mapGraph.getNode(j - 1, i) is None:
+        currNode = Node(j - 1, i, mapGrid[i][j - 1] == '.', mapGrid[i][j - 1] == '*')
         currNode.setNeighbor(node, 'right')
         mapGraph.addNode(currNode)
         createMapGraph(currNode)
 
-    if j + 2 < len(mapGrid[0]) and isWalkable(mapGrid[i][j + 2]) and mapGraph.getNode(j + 2, i) is None:
-        currNode = Node(j + 2, i, mapGrid[i][j + 2] == '.', mapGrid[i][j + 2] == '*')
+    if j + 1 < len(mapGrid[0]) and isWalkable(i, j + 1) and mapGraph.getNode(j + 1, i) is None:
+        currNode = Node(j + 1, i, mapGrid[i][j + 1] == '.', mapGrid[i][j + 1] == '*')
         currNode.setNeighbor(node, 'left')
         mapGraph.addNode(currNode)
         createMapGraph(currNode)
 
-    if i - 1 >= 0 and isWalkable(mapGrid[i - 1][j]) and mapGraph.getNode(j, i - 1) is not None:
+    if i - 1 >= 0 and isWalkable(i - 1, j) and mapGraph.getNode(j, i - 1) is not None:
         node.setNeighbor(mapGraph.getNode(j, i - 1), 'up')
 
-    if i + 1 < len(mapGrid) and isWalkable(mapGrid[i + 1][j]) and mapGraph.getNode(j, i + 1) is not None:
+    if i + 1 < len(mapGrid) and isWalkable(i + 1, j) and mapGraph.getNode(j, i + 1) is not None:
         node.setNeighbor(mapGraph.getNode(j, i + 1), 'down')
 
-    if j - 2 >= 0 and isWalkable(mapGrid[i][j - 2]) and mapGraph.getNode(j - 2, i) is not None:
-        node.setNeighbor(mapGraph.getNode(j - 2, i), 'left')
+    if j - 1 >= 0 and isWalkable(i, j - 1) and mapGraph.getNode(j - 1, i) is not None:
+        node.setNeighbor(mapGraph.getNode(j - 1, i), 'left')
 
-    if j + 2 < len(mapGrid[0]) and isWalkable(mapGrid[i][j + 2]) and mapGraph.getNode(j + 2, i) is not None:
-        node.setNeighbor(mapGraph.getNode(j + 2, i), 'right')
+    if j + 1 < len(mapGrid[0]) and isWalkable(i, j + 1) and mapGraph.getNode(j + 1, i) is not None:
+        node.setNeighbor(mapGraph.getNode(j + 1, i), 'right')
 
 
 def updateDrawindDims():
@@ -275,21 +436,37 @@ def drawMap():
             '''
 
 
+rx, ry = -1, -1
+
+
 def main():
     loadMap('./levels/level3.txt')
-    createMapGraph(findFirstWalkable())
-    # mapGraph.print()
+    createMapGraph(findFirstPill())
+    red = Ghost(4, 2, RED, 1, 2)
+    red.transpose()
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
-            DISPLAYSURF.fill(BLACK)
-            drawMap()
-            pacman.draw()
-            pygame.display.update()
-            FramePerSec.tick(FPS)
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                rnode = mapGraph.nodes[random.randint(0, len(mapGraph.nodes))]
+                global rx
+                global ry
+                rx = rnode.x
+                ry = rnode.y
+                print('Going to:', rx, ry)
+
+        DISPLAYSURF.fill(BLACK)
+        drawMap()
+        pacman.draw()
+
+        if rx != -1 and ry != -1:
+            red.move()
+        red.draw()
+        pygame.display.update()
+        FramePerSec.tick(FPS)
 
 
 if __name__ == '__main__':
