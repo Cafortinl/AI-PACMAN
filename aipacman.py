@@ -105,7 +105,9 @@ class Pacman():
     def __init__(self, xcoor, ycoor):
         self.x = xcoor
         self.y = ycoor
-        self.dirs = ['up', 'right', 'down', 'left']
+        self.prevX = self.x
+        self.prevY = self.y
+        # self.dirs = ['up', 'right', 'down', 'left']
         self.currDir = None
         self.speed = 3
 
@@ -143,10 +145,15 @@ class Pacman():
                 self.y = ny * gridH + (gridH - pacmanH)/2
                 self.currDir = None
 
+        currNode = mapGraph.getNode(int(self.x/gridW), int(self.y/gridH))
+        if currNode is not None:
+            self.prevX = currNode.x
+            self.prevY = currNode.y
+        else:
+            print('Pacman in illegal position')
+
     def changeDir(self):
         keys = pygame.key.get_pressed()
-
-        prevDir = self.currDir
 
         if keys[pygame.K_LEFT]:
             self.currDir = 'left'
@@ -180,6 +187,8 @@ class Pacman():
     def transpose(self):
         self.x = self.x * gridW + (gridW/2)
         self.y = self.y * gridH + (gridH/2)
+        self.prevX = int(self.x/gridW)
+        self.prevY = int(self.y/gridH)
 
     def draw(self):
         pygame.draw.rect(DISPLAYSURF, YELLOW, pygame.Rect(self.x, self.y, pacmanW, pacmanH))
@@ -203,17 +212,63 @@ class Ghost():
 
         px, py = self.targetfn()
 
-        if len(self.destinList) < 1:
-            self.destinList = pathfind(mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)), mapGraph.getNode(px, py))
+        if euclideanDistance(int(self.x/gridW), px, int(self.y/gridH), py) > 5:
+            self.destinList.clear()
+            self.destinList = pathfind(mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)), mapGraph.getNode(px, py), ghostPathWeightFunction)
 
         if len(self.destinList) != 0 and mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) == self.destinList[0][1]:
             nDir = self.destinList[0][0]
             if nDir is not None:
                 self.currDir = nDir
+            else:
+                i = int(self.y/gridH)
+                j = int(self.x/gridW)
+
+                if self.currDir == 'up':
+                    i -= 1
+                elif self.currDir == 'right':
+                    j += 1
+                elif self.currDir == 'down':
+                    i += 1
+                elif self.currDir == 'left':
+                    j -= 1
+
+                self.destinList.append((self.currDir, mapGraph.getNode(int(self.x/gridW), int(self.y/gridH))))
+
             del self.destinList[0]
-            nx, ny = int(self.x/gridW), int(self.y/gridH)
-            self.x = nx * gridW + (gridW - pacmanW)/2
-            self.y = ny * gridH + (gridH - pacmanH)/2
+
+        if self.currDir == 'up':
+            self.y -= speed
+            if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
+                self.y += speed
+                nx, ny = int(self.x/gridW), int(self.y/gridH)
+                self.x = nx * gridW + (gridW - pacmanW)/2
+                self.y = ny * gridH + (gridH - pacmanH)/2
+                self.currDir = None
+        elif self.currDir == 'right':
+            self.x += speed
+            if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
+                self.x -= speed
+                nx, ny = int(self.x/gridW), int(self.y/gridH)
+                self.x = nx * gridW + (gridW - pacmanW)/2
+                self.y = ny * gridH + (gridH - pacmanH)/2
+                self.currDir = None
+        elif self.currDir == 'down':
+            self.y += speed
+            if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
+                self.y -= speed
+                nx, ny = int(self.x/gridW), int(self.y/gridH)
+                self.x = nx * gridW + (gridW - pacmanW)/2
+                self.y = ny * gridH + (gridH - pacmanH)/2
+                self.currDir = None
+        elif self.currDir == 'left':
+            self.x -= speed
+            if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
+                self.x += speed
+                nx, ny = int(self.x/gridW), int(self.y/gridH)
+                self.x = nx * gridW + (gridW - pacmanW)/2
+                self.y = ny * gridH + (gridH - pacmanH)/2
+                self.currDir = None
 
         # prevDir = self.currDir
         # currNode = mapGraph.getNode(int(self.x/gridW), int(self.y/gridH))
@@ -236,14 +291,14 @@ class Ghost():
         #     self.x = nx * gridW + (gridW - pacmanW)/2
         #     self.y = ny * gridH + (gridH - pacmanH)/2
 
-        if self.currDir == 'up':
-            self.y -= speed
-        elif self.currDir == 'right':
-            self.x += speed
-        elif self.currDir == 'down':
-            self.y += speed
-        elif self.currDir == 'left':
-            self.x -= speed
+        #if self.currDir == 'up':
+        #    self.y -= speed
+        #elif self.currDir == 'right':
+        #    self.x += speed
+        #elif self.currDir == 'down':
+        #    self.y += speed
+        #elif self.currDir == 'left':
+        #    self.x -= speed
 
     def rotate(self, rotDir):
         '''
@@ -315,18 +370,6 @@ def pruneVisitOrder(visitOrder, dirs):
     return nVisitOrder
 
 
-# Pathfinding method that will be shared by both PAC-MAN's
-# AI and the different ghosts. It might end up being an
-# A* implementation.
-#
-# params:
-#     origin: an (x, y) tuple representing the element's starting
-#             position
-#
-#     destiny: an (x, y) tuple representing the element's goal
-#
-#     weightfn: a function to determine the weight of each node,
-#               defaults to None, so every node weights the same.
 def pathfind(origin, destiny, weightfn=None):
     frontier = []
     visitOrder = {}
@@ -347,7 +390,7 @@ def pathfind(origin, destiny, weightfn=None):
             nextNode = currNode.getNeighbors()[k]
 
             if weightfn is not None:
-                cost = pathCost[currNode] + weightfn(mapGraph.getNode(nextNode.x, nextNode.y))
+                cost = pathCost[currNode] + weightfn(currNode, mapGraph.getNode(nextNode.x, nextNode.y), k)
             else:
                 cost = pathCost[currNode] + 1
 
@@ -362,6 +405,17 @@ def pathfind(origin, destiny, weightfn=None):
     visitOrder, visitDirs = retTuple[0], retTuple[1]
     visitOrder = pruneVisitOrder(visitOrder, visitDirs)
     return visitOrder
+
+
+def ghostPathWeightFunction(currNode, nextNode, currDir):
+    dirs = ['up', 'right', 'down', 'left']
+
+    nDir = list(currNode.getNeighbors().keys())[list(currNode.getNeighbors().values()).index(nextNode)]
+
+    if currDir is None or abs(dirs.index(currDir) - dirs.index(nDir)) != 2:
+        return 1
+    else:
+        return float('inf')
 
 
 def loadMap(levelPath):
@@ -508,21 +562,22 @@ rx, ry = -1, -1
 
 
 def redTarget():
-    return int(pacman.x/gridW), int(pacman.y/gridH)
+    return pacman.prevX, pacman.prevY
 
 
 def pinkTarget():
-    x, y = int(pacman.x/gridW), int(pacman.y/gridH)
+    x, y = pacman.prevX, pacman.prevY
     pmDir = pacman.currDir
 
-    if pmDir == 'up':
-        y -= 1
-    elif pmDir == 'right':
-        x += 1
-    elif pmDir == 'down':
-        y += 1
-    elif pmDir == 'left':
-        x -= 1
+    if pmDir is not None and mapGraph.getNode(x, y).getNeighbors()[pmDir] is not None:
+        if pmDir == 'up':
+            y -= 1
+        elif pmDir == 'right':
+            x += 1
+        elif pmDir == 'down':
+            y += 1
+        elif pmDir == 'left':
+            x -= 1
 
     return x, y
 
@@ -545,14 +600,6 @@ def main():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                rnode = mapGraph.nodes[random.randint(0, len(mapGraph.nodes))]
-                global rx
-                global ry
-                rx = rnode.x
-                ry = rnode.y
-                print('Going to:', rx, ry)
 
         DISPLAYSURF.fill(BLACK)
         drawMap()
