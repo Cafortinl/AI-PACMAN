@@ -26,6 +26,7 @@ GREEN = (0, 255, 0)
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 YELLOW = (255, 255, 0)
+CYAN = (0,200,200)
 
 # Screen information
 SCREEN_WIDTH = 800
@@ -226,8 +227,6 @@ class Pacman():
 
 
 class Ghost():
-    x=0
-    y=0
     def __init__(self, x, y, color, level, cDir, target):
         self.destinList = []
         self.x = x
@@ -601,7 +600,6 @@ def redTarget():
 def pinkTarget():
     x, y = pacman.prevX, pacman.prevY
     pmDir = pacman.currDir
-
     if pmDir is not None and mapGraph.getNode(x, y).getNeighbors()[pmDir] is not None:
         if pmDir == 'up':
             y -= 1
@@ -615,7 +613,22 @@ def pinkTarget():
     return x, y
 
 def cyanTarget():
-    pass
+    x, y = pacman.prevX, pacman.prevY
+    pmDir = pacman.currDir
+    if pmDir is not None and mapGraph.getNode(x, y).getNeighbors()[pmDir] is not None:
+        if pmDir == 'up':
+            y -= 1
+        elif pmDir == 'right':
+            x += 1
+        elif pmDir == 'down':
+            y += 1
+        elif pmDir == 'left':
+            x -= 1
+    tempx, tempy = (x)+(x-int(red.x/gridW)), (y)+(y-int(red.y/gridH))
+    if mapGraph.getNode(tempx, tempy) is not None:
+        x, y = tempx, tempy
+        print('Blinky: '+str([int(red.x/gridW),int(red.y/gridH)])+' Pacman: '+str([pacman.prevX, pacman.prevY])+' Inky: '+str([x,y]))
+    return x, y
 
 def orangeTarget():
     pass
@@ -641,14 +654,17 @@ spritesheet = Spritesheet('sprites/pacman.png')
 def main():
     global index
     global sprite_pacman
+    global red
     sprite_pacman = [spritesheet.parse_sprite('pac-man_right1.png'), spritesheet.parse_sprite('pac-man_right2.png'),
                  spritesheet.parse_sprite('pac-man_full.png'), spritesheet.parse_sprite('pac-man_right2.png')]
     loadMap('./levels/level3.txt')
     createMapGraph(findFirstPill())
     red = Ghost(4, 2, RED, 1, 2, redTarget)
     yellow = Ghost(54, 2, GREEN, 1, 2, pinkTarget)
+    cyan = Ghost(54, 4, CYAN, 1, 2, cyanTarget)
     red.transpose()
     yellow.transpose()
+    cyan.transpose()
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -659,8 +675,10 @@ def main():
         drawMap()
         red.move()
         yellow.move()
+        cyan.move()
         red.draw()
         yellow.draw()
+        cyan.draw()
         pacman.changeDir()
         pacman.move()
         pacman.draw(updateSprite()[index])
