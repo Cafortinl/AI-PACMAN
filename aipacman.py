@@ -10,12 +10,14 @@ import sys
 import math
 import heapq
 import random
+import json
 
 
 pygame.init()
 
 FPS = 60
 FramePerSec = pygame.time.Clock()
+index=0
 
 # Predefined some colors
 BLUE = (0, 0, 255)
@@ -69,6 +71,29 @@ class Graph():
         for node in self.nodes:
             print(node)
 
+#class to load spritesheets of the assets, needs the spritesheet as a png and the corresponding json
+class Spritesheet():
+    def __init__(self, filename):
+        self.filename = filename
+        self.sprite_sheet = pygame.image.load(filename).convert()
+        self.meta_data = self.filename.replace('png', 'json')
+        with open(self.meta_data) as f:
+            self.data = json.load(f)
+        f.close
+        
+    def get_sprite(self, x, y, w, h):
+        sprite = pygame.Surface((w,h))
+        sprite.set_colorkey((0,0,0))
+        sprite.blit(self.sprite_sheet,(0,0),(x, y, w, h))
+        return sprite
+    
+    def parse_sprite(self, name):
+        sprite = self.data['frames'][name]['frame']
+        x, y, w, h = sprite['x'], sprite['y'], sprite['w'], sprite['h']
+        image = self.get_sprite(x, y, w, h)
+        return image
+        
+        
 
 class Node():
     def __init__(self, x, y, hasPill, hasSuperPill):
@@ -102,6 +127,7 @@ class Node():
 
 
 class Pacman():
+    currDir = ''
     def __init__(self, xcoor, ycoor):
         self.x = xcoor
         self.y = ycoor
@@ -157,6 +183,7 @@ class Pacman():
 
         if keys[pygame.K_LEFT]:
             self.currDir = 'left'
+            
         if keys[pygame.K_RIGHT]:
             self.currDir = 'right'
         if keys[pygame.K_UP]:
@@ -190,11 +217,17 @@ class Pacman():
         self.prevX = int(self.x/gridW)
         self.prevY = int(self.y/gridH)
 
-    def draw(self):
-        pygame.draw.rect(DISPLAYSURF, YELLOW, pygame.Rect(self.x, self.y, pacmanW, pacmanH))
+    def draw(self, sprites):
+        DISPLAYSURF.blit(sprites, (self.x, self.y))
+        
+    def getDir(self):
+        return self.currDir
+        
 
 
 class Ghost():
+    x=0
+    y=0
     def __init__(self, x, y, color, level, cDir, target):
         self.destinList = []
         self.x = x
@@ -586,9 +619,30 @@ def cyanTarget():
 
 def orangeTarget():
     pass
+# def to update the sprites used by pac-man
+def updateSprite():
+    if(pacman.currDir=='left'):
+        sprite_pacman = [spritesheet.parse_sprite('pac-man_left1.png'), spritesheet.parse_sprite('pac-man_left2.png'),
+                 spritesheet.parse_sprite('pac-man_full.png'), spritesheet.parse_sprite('pac-man_left2.png')]
+    elif(pacman.currDir=='down'):
+        sprite_pacman = [spritesheet.parse_sprite('pac-man_down1.png'), spritesheet.parse_sprite('pac-man_down2.png'),
+                 spritesheet.parse_sprite('pac-man_full.png'), spritesheet.parse_sprite('pac-man_down2.png')]   
+    elif(pacman.currDir=='up'):
+        sprite_pacman = [spritesheet.parse_sprite('pac-man_up1.png'), spritesheet.parse_sprite('pac-man_up2.png'),
+                 spritesheet.parse_sprite('pac-man_full.png'), spritesheet.parse_sprite('pac-man_up2.png')]
+    else:
+        sprite_pacman = [spritesheet.parse_sprite('pac-man_right1.png'), spritesheet.parse_sprite('pac-man_right2.png'),
+                 spritesheet.parse_sprite('pac-man_full.png'), spritesheet.parse_sprite('pac-man_right2.png')]
+    return sprite_pacman
+
+spritesheet = Spritesheet('sprites/pacman.png')
 
 
 def main():
+    global index
+    global sprite_pacman
+    sprite_pacman = [spritesheet.parse_sprite('pac-man_right1.png'), spritesheet.parse_sprite('pac-man_right2.png'),
+                 spritesheet.parse_sprite('pac-man_full.png'), spritesheet.parse_sprite('pac-man_right2.png')]
     loadMap('./levels/level3.txt')
     createMapGraph(findFirstPill())
     red = Ghost(4, 2, RED, 1, 2, redTarget)
@@ -609,7 +663,8 @@ def main():
         yellow.draw()
         pacman.changeDir()
         pacman.move()
-        pacman.draw()
+        pacman.draw(updateSprite()[index])
+        index = (index+1) % len(sprite_pacman)
 
         # for node in mapGraph.nodes:
         #     pygame.draw.rect(DISPLAYSURF, RED, pygame.Rect(node.x * gridW+(gridW/2), node.y * gridH+(gridH/2), pointW*4, pointH*2))
