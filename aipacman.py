@@ -132,55 +132,78 @@ class Node():
 
 class Pacman():
     currDir = ''
-    def __init__(self, xcoor, ycoor):
+    def __init__(self, xcoor, ycoor, target):
+        self.destinList = []
         self.x = xcoor
         self.y = ycoor
         self.prevX = self.x
         self.prevY = self.y
+        self.targetfn = target
         # self.dirs = ['up', 'right', 'down', 'left']
         self.currDir = None
         self.speed = 3
 
     def move(self):
+        speed = 3
+        px, py = self.targetfn()
+
+        if euclideanDistance(int(self.x/gridW), px, int(self.y/gridH), py) > 5:
+            self.destinList.clear()
+            self.destinList = pathfind(mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)), mapGraph.getNode(px, py), ghostPathWeightFunction)
+
+        if len(self.destinList) != 0 and mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) == self.destinList[0][1]:
+            nDir = self.destinList[0][0]
+            if nDir is not None:
+                self.currDir = nDir
+            else:
+                i = int(self.y/gridH)
+                j = int(self.x/gridW)
+
+                if self.currDir == 'up':
+                    i -= 1
+                elif self.currDir == 'right':
+                    j += 1
+                elif self.currDir == 'down':
+                    i += 1
+                elif self.currDir == 'left':
+                    j -= 1
+
+                self.destinList.append((self.currDir, mapGraph.getNode(int(self.x/gridW), int(self.y/gridH))))
+
+            del self.destinList[0]
+
         if self.currDir == 'up':
-            self.y -= self.speed
+            self.y -= speed
             if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
-                self.y += self.speed
+                self.y += speed
                 nx, ny = int(self.x/gridW), int(self.y/gridH)
                 self.x = nx * gridW + (gridW - pacmanW)/2
                 self.y = ny * gridH + (gridH - pacmanH)/2
                 self.currDir = None
         elif self.currDir == 'right':
-            self.x += self.speed
+            self.x += speed
             if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
-                self.x -= self.speed
+                self.x -= speed
                 nx, ny = int(self.x/gridW), int(self.y/gridH)
                 self.x = nx * gridW + (gridW - pacmanW)/2
                 self.y = ny * gridH + (gridH - pacmanH)/2
                 self.currDir = None
         elif self.currDir == 'down':
-            self.y += self.speed
+            self.y += speed
             if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
-                self.y -= self.speed
+                self.y -= speed
                 nx, ny = int(self.x/gridW), int(self.y/gridH)
                 self.x = nx * gridW + (gridW - pacmanW)/2
                 self.y = ny * gridH + (gridH - pacmanH)/2
                 self.currDir = None
         elif self.currDir == 'left':
-            self.x -= self.speed
+            self.x -= speed
             if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
-                self.x += self.speed
+                self.x += speed
                 nx, ny = int(self.x/gridW), int(self.y/gridH)
                 self.x = nx * gridW + (gridW - pacmanW)/2
                 self.y = ny * gridH + (gridH - pacmanH)/2
                 self.currDir = None
-
-        currNode = mapGraph.getNode(int(self.x/gridW), int(self.y/gridH))
-        if currNode is not None:
-            self.prevX = currNode.x
-            self.prevY = currNode.y
-        else:
-            print('Pacman in illegal position')
 
     def changeDir(self):
         keys = pygame.key.get_pressed()
@@ -543,7 +566,7 @@ def loadMap(levelPath):
         for j in range(int(dimArr[1])):
             if line[j] == 'P':
                 mapGrid[i].append('.')
-                pacman = Pacman(j, i)
+                pacman = Pacman(j, i, pacTarget)
             elif line[j] != '\n':
                 mapGrid[i].append(line[j])
 
@@ -676,7 +699,7 @@ def redTarget():
     if red.eaten:
         x, y = 28, 12
     elif red.comible:
-        x, y = pacman.prevX, pacman.prevY
+        x, y = int(pacman.x/gridW), int(pacman.y/gridH)
         tempx = x -int(red.x/gridW)
         tempy = y -int(red.y/gridH)
         if tempx>0 and tempy>0:
@@ -690,13 +713,13 @@ def redTarget():
     elif red.standby:
         x, y = getnearestNode(0,0)
     else:
-        x, y = pacman.prevX, pacman.prevY        
+        x, y = int(pacman.x/gridW), int(pacman.y/gridH)      
     if debug==1: pygame.draw.line(DISPLAYSURF, RED, [int(red.x/gridW)* gridW, int(red.y/gridH)* gridH+(gridH/2)], [x* gridW +gridW*2,y* gridH+(gridH/2)], 5)
     return x, y
 
 def pinkTarget():
     global debug
-    x, y = pacman.prevX, pacman.prevY
+    x, y = int(pacman.x/gridW), int(pacman.y/gridH)
     pmDir = pacman.currDir
     if yellow.eaten:
         x, y = 28, 12
@@ -728,7 +751,7 @@ def pinkTarget():
 
 def cyanTarget():
     global debug
-    x, y = pacman.prevX, pacman.prevY
+    x, y = int(pacman.x/gridW), int(pacman.y/gridH)
     pmDir = pacman.currDir
     if cyan.eaten:
         x, y = 28, 12
@@ -768,7 +791,7 @@ def cyanTarget():
 
 def orangeTarget():
     global runaway, debug
-    x, y = pacman.prevX, pacman.prevY
+    x, y = int(pacman.x/gridW), int(pacman.y/gridH)
     tempx = x -int(orange.x/gridW)
     tempy = y -int(orange.y/gridH)
     if orange.eaten:
@@ -804,6 +827,11 @@ def orangeTarget():
     return x, y
     
 ####################################################################################################
+def pacTarget():
+    x,y = x, y = pacman.prevX, pacman.prevY
+    x, y = getNearestEatableNode(x, y)
+    return x, y
+    
 ########################################## Updating Sprites #######################################################
 # def to update the sprites used by pac-man
 def updateSpritePAC():
@@ -846,6 +874,37 @@ def updateSpriteGHOST(ghost,name):
     return sprite
 
 spritesheet = Spritesheet('sprites/pacman.png')
+
+def getNearestEatableNode(x, y):
+    nearnode = False
+    cont=1
+    while nearnode is False:
+        if (mapGrid[y][x+cont] == '.' or mapGrid[y][x+cont] == '*'):
+            nearnode=True
+            return x+cont, y
+        elif (mapGrid[y+cont][x] == '.' or mapGrid[y+cont][x] == '*'):
+            nearnode=True
+            return x, y+cont
+        elif (mapGrid[y][x-cont] == '.' or mapGrid[y][x-cont] == '*'):
+            nearnode=True
+            return x-cont, y
+        elif (mapGrid[y-cont][x] == '.' or mapGrid[y-cont][x] == '*'):
+            nearnode=True
+            return x, y-cont
+        elif (mapGrid[y+cont][x+cont] == '.' or mapGrid[y+cont][x+cont] == '*'):
+            nearnode=True
+            return x+cont, y+cont
+        elif (mapGrid[y-cont][x-cont] == '.' or mapGrid[y-cont][x-cont] == '*'):
+            nearnode=True
+            return x-cont, y-cont
+        elif (mapGrid[y-cont][x+cont] == '.' or mapGrid[y-cont][x+cont] == '*'):
+            nearnode=True
+            return x+cont, y-cont
+        elif (mapGrid[y+cont][x-cont] == '.' or mapGrid[y+cont][x-cont] == '*'):
+            nearnode=True
+            return x-cont, y+cont
+        else:
+            cont= cont+1
 
 def getnearestNode(x, y):
     nearnode= False
@@ -926,7 +985,6 @@ def main():
         pacman.draw(updateSpritePAC()[index])
         index = (index+1) % len(sprite_pacman)
         ghostIndex = (ghostIndex+1)% len(sprite_red)
-        print([int(pacman.x/gridW), int(pacman.y/gridH)])
         pacman.tunel()
         red.tunel()
         yellow.tunel()
