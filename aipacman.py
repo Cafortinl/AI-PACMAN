@@ -226,6 +226,27 @@ class Pacman():
         
     def getDir(self):
         return self.currDir
+    
+    def tunel(self):
+        #print(self.x, self.y)
+        if self.x == 30.508474576271183 and self.y == 369.6969696969697:
+            self.x = 750.8305084745763 
+            self.currDir = 'left'
+        elif self.x == 789.8305084745763 and self.y == 369.6969696969697:
+            self.x = 40.508474576271183 
+            self.currDir = 'right'
+
+    def comer(self):
+        if mapGrid[int(self.y/gridH)][int(self.x/gridW)] == '.':
+            mapGrid[int(self.y/gridH)][int(self.x/gridW)] = ' '
+            
+        elif mapGrid[int(self.y/gridH)][int(self.x/gridW)] == '*':
+            mapGrid[int(self.y/gridH)][int(self.x/gridW)] = ' '
+            red.superPildora()
+
+    def comerFantasma(self): 
+        if (red.x == self.x and red.y == self.y) and red.comible == True:
+            red.comido()
         
 
 
@@ -239,6 +260,7 @@ class Ghost():
         self.dirs = ['up', 'right', 'down', 'left']
         self.currDir = None
         self.targetfn = target
+        self.comible = False
 
     def move(self):
         global pacman
@@ -349,6 +371,23 @@ class Ghost():
 
     def draw(self, sprites):
         DISPLAYSURF.blit(sprites, (self.x, self.y))
+
+    def tunel(self):
+        #print(self.x, self.y)
+        if self.x == 30.508474576271183 and self.y == 369.6969696969697:
+            self.x = 789.8305084745763 - 1
+        elif self.x == 789.8305084745763 and self.y == 369.6969696969697:
+            self.x = 30.508474576271183 + 1
+
+    def superPildora(self):
+        self.comible = True
+        self.color = GREEN
+    
+    def enBase(self):
+        self.comible = False
+
+    def comido(self): 
+        self.color = WHITE
 
 
 # Level related globals
@@ -774,7 +813,13 @@ def main():
         pacman.draw(updateSpritePAC()[index])
         index = (index+1) % len(sprite_pacman)
         ghostIndex = (ghostIndex+1)% len(sprite_red)
-
+        pacman.tunel()
+        red.tunel()
+        yellow.tunel()
+        cyan.tunel()
+        pacman.comer()
+        if (red.comible == True):
+            pacman.comerFantasma()
         # for node in mapGraph.nodes:
         #     pygame.draw.rect(DISPLAYSURF, RED, pygame.Rect(node.x * gridW+(gridW/2), node.y * gridH+(gridH/2), pointW*4, pointH*2))
 
