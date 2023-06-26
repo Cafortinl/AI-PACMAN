@@ -139,111 +139,112 @@ class Pacman():
         self.prevX = self.x
         self.prevY = self.y
         self.targetfn = target
+        self.isdead = False
         # self.dirs = ['up', 'right', 'down', 'left']
         self.currDir = None
         self.speed = 3
 
-    def move(self):
-        speed = 3
-        px, py = self.targetfn()
- 
-        if euclideanDistance(int(self.x/gridW), px, int(self.y/gridH), py) > 5:
-            self.destinList.clear()
-            self.destinList = pathfind(mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)), mapGraph.getNode(px, py), ghostPathWeightFunction)
- 
-        if len(self.destinList) != 0 and mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) == self.destinList[0][1]:
-            nDir = self.destinList[0][0]
-            if nDir is not None:
-                self.currDir = nDir
-            else:
-                i = int(self.y/gridH)
-                j = int(self.x/gridW)
- 
-                if self.currDir == 'up':
-                    i -= 1
-                elif self.currDir == 'right':
-                    j += 1
-                elif self.currDir == 'down':
-                    i += 1
-                elif self.currDir == 'left':
-                    j -= 1
- 
-                self.destinList.append((self.currDir, mapGraph.getNode(int(self.x/gridW), int(self.y/gridH))))
- 
-            del self.destinList[0]
- 
-        if self.currDir == 'up':
-            self.y -= speed
-            if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
-                self.y += speed
-                nx, ny = int(self.x/gridW), int(self.y/gridH)
-                self.x = nx * gridW + (gridW - pacmanW)/2
-                self.y = ny * gridH + (gridH - pacmanH)/2
-                self.currDir = None
-        elif self.currDir == 'right':
-            self.x += speed
-            if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
-                self.x -= speed
-                nx, ny = int(self.x/gridW), int(self.y/gridH)
-                self.x = nx * gridW + (gridW - pacmanW)/2
-                self.y = ny * gridH + (gridH - pacmanH)/2
-                self.currDir = None
-        elif self.currDir == 'down':
-            self.y += speed
-            if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
-                self.y -= speed
-                nx, ny = int(self.x/gridW), int(self.y/gridH)
-                self.x = nx * gridW + (gridW - pacmanW)/2
-                self.y = ny * gridH + (gridH - pacmanH)/2
-                self.currDir = None
-        elif self.currDir == 'left':
-            self.x -= speed
-            if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
-                self.x += speed
-                nx, ny = int(self.x/gridW), int(self.y/gridH)
-                self.x = nx * gridW + (gridW - pacmanW)/2
-                self.y = ny * gridH + (gridH - pacmanH)/2
-                self.currDir = None
    #def move(self):
+   #    speed = 3
+   #    px, py = self.targetfn()
+ 
+   #    if euclideanDistance(int(self.x/gridW), px, int(self.y/gridH), py) > 5:
+   #        self.destinList.clear()
+   #        self.destinList = pathfind(mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)), mapGraph.getNode(px, py), ghostPathWeightFunction)
+ 
+   #    if len(self.destinList) != 0 and mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) == self.destinList[0][1]:
+   #        nDir = self.destinList[0][0]
+   #        if nDir is not None:
+   #            self.currDir = nDir
+   #        else:
+   #            i = int(self.y/gridH)
+   #            j = int(self.x/gridW)
+ 
+   #            if self.currDir == 'up':
+   #                i -= 1
+   #            elif self.currDir == 'right':
+   #                j += 1
+   #            elif self.currDir == 'down':
+   #                i += 1
+   #            elif self.currDir == 'left':
+   #                j -= 1
+ 
+   #            self.destinList.append((self.currDir, mapGraph.getNode(int(self.x/gridW), int(self.y/gridH))))
+ 
+   #        del self.destinList[0]
+ 
    #    if self.currDir == 'up':
-   #        self.y -= self.speed
+   #        self.y -= speed
    #        if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
-   #            self.y += self.speed
+   #            self.y += speed
    #            nx, ny = int(self.x/gridW), int(self.y/gridH)
    #            self.x = nx * gridW + (gridW - pacmanW)/2
    #            self.y = ny * gridH + (gridH - pacmanH)/2
    #            self.currDir = None
    #    elif self.currDir == 'right':
-   #        self.x += self.speed
+   #        self.x += speed
    #        if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
-   #            self.x -= self.speed
+   #            self.x -= speed
    #            nx, ny = int(self.x/gridW), int(self.y/gridH)
    #            self.x = nx * gridW + (gridW - pacmanW)/2
    #            self.y = ny * gridH + (gridH - pacmanH)/2
    #            self.currDir = None
    #    elif self.currDir == 'down':
-   #        self.y += self.speed
+   #        self.y += speed
    #        if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
-   #            self.y -= self.speed
+   #            self.y -= speed
    #            nx, ny = int(self.x/gridW), int(self.y/gridH)
    #            self.x = nx * gridW + (gridW - pacmanW)/2
    #            self.y = ny * gridH + (gridH - pacmanH)/2
    #            self.currDir = None
    #    elif self.currDir == 'left':
-   #        self.x -= self.speed
+   #        self.x -= speed
    #        if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
-   #            self.x += self.speed
+   #            self.x += speed
    #            nx, ny = int(self.x/gridW), int(self.y/gridH)
    #            self.x = nx * gridW + (gridW - pacmanW)/2
    #            self.y = ny * gridH + (gridH - pacmanH)/2
    #            self.currDir = None
+    def move(self):
+        if self.currDir == 'up':
+            self.y -= self.speed
+            if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
+                self.y += self.speed
+                nx, ny = int(self.x/gridW), int(self.y/gridH)
+                self.x = nx * gridW + (gridW - pacmanW)/2
+                self.y = ny * gridH + (gridH - pacmanH)/2
+                self.currDir = None
+        elif self.currDir == 'right':
+            self.x += self.speed
+            if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
+                self.x -= self.speed
+                nx, ny = int(self.x/gridW), int(self.y/gridH)
+                self.x = nx * gridW + (gridW - pacmanW)/2
+                self.y = ny * gridH + (gridH - pacmanH)/2
+                self.currDir = None
+        elif self.currDir == 'down':
+            self.y += self.speed
+            if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
+                self.y -= self.speed
+                nx, ny = int(self.x/gridW), int(self.y/gridH)
+                self.x = nx * gridW + (gridW - pacmanW)/2
+                self.y = ny * gridH + (gridH - pacmanH)/2
+                self.currDir = None
+        elif self.currDir == 'left':
+            self.x -= self.speed
+            if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
+                self.x += self.speed
+                nx, ny = int(self.x/gridW), int(self.y/gridH)
+                self.x = nx * gridW + (gridW - pacmanW)/2
+                self.y = ny * gridH + (gridH - pacmanH)/2
+                self.currDir = None
 
-   #    currNode = mapGraph.getNode(int(self.x/gridW), int(self.y/gridH))
-   #    if currNode is not None:
-   #        self.prevX = currNode.x
-   #        self.prevY = currNode.y
-   #    else:
-   #        print('Pacman in illegal position')
+        currNode = mapGraph.getNode(int(self.x/gridW), int(self.y/gridH))
+        if currNode is not None:
+            self.prevX = currNode.x
+            self.prevY = currNode.y
+        else:
+            print('Pacman in illegal position')
 
     def changeDir(self):
         keys = pygame.key.get_pressed()
@@ -308,6 +309,16 @@ class Pacman():
             orange.superPildora()
             cyan.superPildora()
             yellow.superPildora()
+    
+    def comido(self):
+        if (int(red.x/gridW) == int(self.x/gridW) and int(red.y/gridH) == int(self.y/gridH)) and red.comible == False:
+            self.isdead = True
+        if (int(cyan.x/gridW) == int(self.x/gridW) and int(cyan.y/gridH) == int(self.y/gridH)) and cyan.comible == False:
+            self.isdead = True
+        if (int(orange.x/gridW) == int(self.x/gridW) and int(orange.y/gridH) == int(self.y/gridH)) and orange.comible == False:
+            self.isdead = True
+        if (int(yellow.x/gridW) == int(self.x/gridW) and int(yellow.y/gridH) == int(self.y/gridH)) and yellow.comible == False:
+            self.isdead = True
 
     def comerFantasma(self):
         if (int(red.x/gridW) == int(self.x/gridW) and int(red.y/gridH) == int(self.y/gridH)) and red.comible == True:
@@ -339,10 +350,10 @@ class Ghost():
 
     def move(self):
         global pacman
-        speed = 3
+        speed = 2.8
         
         if self.comible: speed= 1.5
-        else: speed =3
+        else: speed =2.8
         fright = ((pygame.time.get_ticks()-self.frighttime)/1000)
         #check if frightened mode is over
         if 4<fright and self.comible:
@@ -1026,12 +1037,15 @@ def main():
         yellow.tunel()
         cyan.tunel()
         pacman.comer()
+        pacman.comido()
         print([int(pacman.x/gridW),int(pacman.y/gridH)])
         if (red.comible == True):
             pacman.comerFantasma()
         # for node in mapGraph.nodes:
         #     pygame.draw.rect(DISPLAYSURF, RED, pygame.Rect(node.x * gridW+(gridW/2), node.y * gridH+(gridH/2), pointW*4, pointH*2))
-
+        if pacman.isdead:
+            pygame.quit()
+            sys.exit()
         pygame.display.update()
         FramePerSec.tick(FPS)
 
