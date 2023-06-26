@@ -84,20 +84,19 @@ class Spritesheet():
         with open(self.meta_data) as f:
             self.data = json.load(f)
         f.close
-        
+
     def get_sprite(self, x, y, w, h):
         sprite = pygame.Surface((w,h))
         sprite.set_colorkey((0,0,0))
         sprite.blit(self.sprite_sheet,(0,0),(x, y, w, h))
         return sprite
-    
+
     def parse_sprite(self, name):
         sprite = self.data['frames'][name]['frame']
         x, y, w, h = sprite['x'], sprite['y'], sprite['w'], sprite['h']
         image = self.get_sprite(x, y, w, h)
         return image
-        
-        
+
 
 class Node():
     def __init__(self, x, y, hasPill, hasSuperPill):
@@ -187,7 +186,6 @@ class Pacman():
 
         if keys[pygame.K_LEFT]:
             self.currDir = 'left'
-            
         if keys[pygame.K_RIGHT]:
             self.currDir = 'right'
         if keys[pygame.K_UP]:
@@ -223,10 +221,10 @@ class Pacman():
 
     def draw(self, sprites):
         DISPLAYSURF.blit(sprites, (self.x, self.y))
-        
+
     def getDir(self):
         return self.currDir
-    
+
     def tunel(self):
         #print(self.x, self.y)
         if self.x == 30.508474576271183 and self.y == 369.6969696969697:
@@ -239,15 +237,23 @@ class Pacman():
     def comer(self):
         if mapGrid[int(self.y/gridH)][int(self.x/gridW)] == '.':
             mapGrid[int(self.y/gridH)][int(self.x/gridW)] = ' '
-            
+
         elif mapGrid[int(self.y/gridH)][int(self.x/gridW)] == '*':
             mapGrid[int(self.y/gridH)][int(self.x/gridW)] = ' '
             red.superPildora()
+            orange.superPildora()
+            cyan.superPildora()
+            yellow.superPildora()
 
-    def comerFantasma(self): 
+    def comerFantasma(self):
         if (red.x == self.x and red.y == self.y) and red.comible == True:
             red.comido()
-        
+        if (cyan.x == self.x and cyan.y == self.y) and cyan.comible == True:
+            cyan.comido()
+        if (orange.x == self.x and orange.y == self.y) and orange.comible == True:
+            orange.comido()
+        if (yellow.x == self.x and yellow.y == self.y) and yellow.comible == True:
+            yellow.comido()
 
 
 class Ghost():
@@ -519,7 +525,7 @@ def isWalkable(i, j):
     tile = mapGrid[i][j]
     if tile == '.' or tile == '*' or tile == '#':
         return True
-    if tile == ' ' and j - 1 > 0 and j + 1 < len(mapGrid[0]) and ((mapGrid[i][j-1] == '.' or mapGrid[i][j+1] == '.') or (mapGrid[i][j-1] == '#' or mapGrid[i][j+1] == '#') or (mapGrid[i][j-1] == '*' or mapGrid[i][j+1] == '*')):
+    if tile == ' ' and j - 1 > 0 and j + 1 < len(mapGrid[0]) and (mapGrid[i][j-1] == '.' or mapGrid[i][j-1] == '#' or mapGrid[i][j-1] == '*') and (mapGrid[i][j+1] == '#' or mapGrid[i][j+1] == '.' or mapGrid[i][j+1] == '*' or mapGrid[i][j+1] == '.'):
         return True
     return False
 
