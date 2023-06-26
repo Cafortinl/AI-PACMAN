@@ -146,11 +146,11 @@ class Pacman():
     def move(self):
         speed = 3
         px, py = self.targetfn()
-
+ 
         if euclideanDistance(int(self.x/gridW), px, int(self.y/gridH), py) > 5:
             self.destinList.clear()
             self.destinList = pathfind(mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)), mapGraph.getNode(px, py), ghostPathWeightFunction)
-
+ 
         if len(self.destinList) != 0 and mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) == self.destinList[0][1]:
             nDir = self.destinList[0][0]
             if nDir is not None:
@@ -158,7 +158,7 @@ class Pacman():
             else:
                 i = int(self.y/gridH)
                 j = int(self.x/gridW)
-
+ 
                 if self.currDir == 'up':
                     i -= 1
                 elif self.currDir == 'right':
@@ -167,11 +167,11 @@ class Pacman():
                     i += 1
                 elif self.currDir == 'left':
                     j -= 1
-
+ 
                 self.destinList.append((self.currDir, mapGraph.getNode(int(self.x/gridW), int(self.y/gridH))))
-
+ 
             del self.destinList[0]
-
+ 
         if self.currDir == 'up':
             self.y -= speed
             if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
@@ -204,6 +204,46 @@ class Pacman():
                 self.x = nx * gridW + (gridW - pacmanW)/2
                 self.y = ny * gridH + (gridH - pacmanH)/2
                 self.currDir = None
+   #def move(self):
+   #    if self.currDir == 'up':
+   #        self.y -= self.speed
+   #        if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
+   #            self.y += self.speed
+   #            nx, ny = int(self.x/gridW), int(self.y/gridH)
+   #            self.x = nx * gridW + (gridW - pacmanW)/2
+   #            self.y = ny * gridH + (gridH - pacmanH)/2
+   #            self.currDir = None
+   #    elif self.currDir == 'right':
+   #        self.x += self.speed
+   #        if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
+   #            self.x -= self.speed
+   #            nx, ny = int(self.x/gridW), int(self.y/gridH)
+   #            self.x = nx * gridW + (gridW - pacmanW)/2
+   #            self.y = ny * gridH + (gridH - pacmanH)/2
+   #            self.currDir = None
+   #    elif self.currDir == 'down':
+   #        self.y += self.speed
+   #        if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
+   #            self.y -= self.speed
+   #            nx, ny = int(self.x/gridW), int(self.y/gridH)
+   #            self.x = nx * gridW + (gridW - pacmanW)/2
+   #            self.y = ny * gridH + (gridH - pacmanH)/2
+   #            self.currDir = None
+   #    elif self.currDir == 'left':
+   #        self.x -= self.speed
+   #        if mapGraph.getNode(int(self.x/gridW), int(self.y/gridH)) is None:
+   #            self.x += self.speed
+   #            nx, ny = int(self.x/gridW), int(self.y/gridH)
+   #            self.x = nx * gridW + (gridW - pacmanW)/2
+   #            self.y = ny * gridH + (gridH - pacmanH)/2
+   #            self.currDir = None
+
+   #    currNode = mapGraph.getNode(int(self.x/gridW), int(self.y/gridH))
+   #    if currNode is not None:
+   #        self.prevX = currNode.x
+   #        self.prevY = currNode.y
+   #    else:
+   #        print('Pacman in illegal position')
 
     def changeDir(self):
         keys = pygame.key.get_pressed()
@@ -828,8 +868,34 @@ def orangeTarget():
     
 ####################################################################################################
 def pacTarget():
-    x,y = x, y = pacman.prevX, pacman.prevY
-    x, y = getNearestEatableNode(x, y)
+    x, y = int(pacman.x/gridW), int(pacman.y/gridH)
+    tempx = int(red.x/gridW)-x
+    tempy = int(red.y/gridH)-y
+    distance = int(math.sqrt(((x -int(red.x/gridW))**2)+((y-int(red.y/gridH))**2)))
+    td = int(math.sqrt(((x -int(yellow.x/gridW))**2)+((y-int(yellow.y/gridH))**2)))
+    if(td<distance):
+        tempx = int(yellow.x/gridW)-x
+        tempy = int(yellow.y/gridH)-y
+        distance = td
+    td = int(math.sqrt(((x -int(cyan.x/gridW))**2)+((y-int(cyan.y/gridH))**2)))
+    if(td<distance):
+        tempx = int(cyan.x/gridW)-x
+        tempy = int(cyan.y/gridH)-y
+        distance = td
+    td = int(math.sqrt(((x -int(orange.x/gridW))**2)+((y-int(orange.y/gridH))**2)))
+    if(td<distance):
+        tempx = int(orange.x/gridW)-x
+        tempy = int(orange.y/gridH)-y
+        distance = td
+    if tempx>0 and tempy>0:
+        x, y = getnearestNode(0,0)
+    elif tempx>0 and tempy<=0:
+        x, y = getnearestNode(0, len(mapGrid))
+    elif tempx<=0 and tempy>0:
+        x, y = getnearestNode(len(mapGrid[0]), 0)
+    else:
+        x, y = getnearestNode(len(mapGrid[0]), len(mapGrid))
+    
     return x, y
     
 ########################################## Updating Sprites #######################################################
@@ -875,36 +941,6 @@ def updateSpriteGHOST(ghost,name):
 
 spritesheet = Spritesheet('sprites/pacman.png')
 
-def getNearestEatableNode(x, y):
-    nearnode = False
-    cont=1
-    while nearnode is False:
-        if (mapGrid[y][x+cont] == '.' or mapGrid[y][x+cont] == '*'):
-            nearnode=True
-            return x+cont, y
-        elif (mapGrid[y+cont][x] == '.' or mapGrid[y+cont][x] == '*'):
-            nearnode=True
-            return x, y+cont
-        elif (mapGrid[y][x-cont] == '.' or mapGrid[y][x-cont] == '*'):
-            nearnode=True
-            return x-cont, y
-        elif (mapGrid[y-cont][x] == '.' or mapGrid[y-cont][x] == '*'):
-            nearnode=True
-            return x, y-cont
-        elif (mapGrid[y+cont][x+cont] == '.' or mapGrid[y+cont][x+cont] == '*'):
-            nearnode=True
-            return x+cont, y+cont
-        elif (mapGrid[y-cont][x-cont] == '.' or mapGrid[y-cont][x-cont] == '*'):
-            nearnode=True
-            return x-cont, y-cont
-        elif (mapGrid[y-cont][x+cont] == '.' or mapGrid[y-cont][x+cont] == '*'):
-            nearnode=True
-            return x+cont, y-cont
-        elif (mapGrid[y+cont][x-cont] == '.' or mapGrid[y+cont][x-cont] == '*'):
-            nearnode=True
-            return x-cont, y+cont
-        else:
-            cont= cont+1
 
 def getnearestNode(x, y):
     nearnode= False
@@ -954,7 +990,7 @@ def main():
     red = Ghost(4, 2, RED, 1, 2, redTarget)
     yellow = Ghost(54, 2, GREEN, 1, 2, pinkTarget)
     cyan = Ghost(54, 4, CYAN, 1, 2, cyanTarget)
-    orange = Ghost(4, 4, ORANGE, 1, 2, orangeTarget)
+    orange = Ghost(4, 5, ORANGE, 1, 2, orangeTarget)
     red.transpose()
     yellow.transpose()
     cyan.transpose()
@@ -990,6 +1026,7 @@ def main():
         yellow.tunel()
         cyan.tunel()
         pacman.comer()
+        print([int(pacman.x/gridW),int(pacman.y/gridH)])
         if (red.comible == True):
             pacman.comerFantasma()
         # for node in mapGraph.nodes:
