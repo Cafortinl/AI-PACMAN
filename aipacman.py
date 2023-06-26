@@ -20,6 +20,7 @@ FramePerSec = pygame.time.Clock()
 index=0
 ghostIndex= 0
 runaway=False
+frightened=False
 
 # Predefined some colors
 BLUE = (0, 0, 255)
@@ -255,7 +256,6 @@ class Pacman():
         if (yellow.x == self.x and yellow.y == self.y) and yellow.comible == True:
             yellow.comido()
 
-
 class Ghost():
     def __init__(self, x, y, color, level, cDir, target):
         self.destinList = []
@@ -267,12 +267,26 @@ class Ghost():
         self.currDir = None
         self.targetfn = target
         self.comible = False
+        self.standby = False
+        self.frighttime = pygame.time.get_ticks()
+        self.standtime = pygame.time.get_ticks()
 
     def move(self):
         global pacman
-
         speed = 3
-
+        
+        if self.comible: speed= 1.5
+        else: speed =3
+        fright = ((pygame.time.get_ticks()-self.frighttime)/1000)
+        if 7< fright:
+            self.comible =False
+             
+        stand = ((pygame.time.get_ticks()-self.standtime)/1000)
+        if 15< stand:
+            self.standby = True
+        if 18< stand:
+            self.standby = False
+            self.standtime = pygame.time.get_ticks()   
         px, py = self.targetfn()
 
         if euclideanDistance(int(self.x/gridW), px, int(self.y/gridH), py) > 5:
@@ -386,7 +400,10 @@ class Ghost():
             self.x = 30.508474576271183 + 1
 
     def superPildora(self):
+        self.frighttime = pygame.time.get_ticks()
+        self.standtime = pygame.time.get_ticks()
         self.comible = True
+        
         self.color = GREEN
     
     def enBase(self):
@@ -640,26 +657,56 @@ def drawMap():
 
 rx, ry = -1, -1
 
+###################################Ghost Targets#####################################################
 
 def redTarget():
     global debug
-    if debug==1: pygame.draw.line(DISPLAYSURF, RED, [int(red.x/gridW)* gridW, int(red.y/gridH)* gridH+(gridH/2)], [pacman.prevX* gridW +gridW*2,pacman.prevY* gridH+(gridH/2)], 5)
-    return pacman.prevX, pacman.prevY
+    if red.comible:
+        x, y = pacman.prevX, pacman.prevY
+        tempx = x -int(red.x/gridW)
+        tempy = y -int(red.y/gridH)
+        if tempx>0 and tempy>0:
+            x, y = getnearestNode(0,0)
+        elif tempx>0 and tempy<=0:
+            x, y = getnearestNode(0, len(mapGrid))
+        elif tempx<=0 and tempy>0:
+            x, y = getnearestNode(len(mapGrid[0]), 0)
+        else:
+            x, y = getnearestNode(len(mapGrid[0]), len(mapGrid))
+    elif red.standby:
+        x, y = getnearestNode(0,0)
+    else:
+        x, y = pacman.prevX, pacman.prevY        
+    if debug==1: pygame.draw.line(DISPLAYSURF, RED, [int(red.x/gridW)* gridW, int(red.y/gridH)* gridH+(gridH/2)], [x* gridW +gridW*2,y* gridH+(gridH/2)], 5)
+    return x, y
 
-###################################Ghost Targets#####################################################
 def pinkTarget():
     global debug
     x, y = pacman.prevX, pacman.prevY
     pmDir = pacman.currDir
-    if pmDir is not None and mapGraph.getNode(x, y).getNeighbors()[pmDir] is not None:
-        if pmDir == 'up':
-            y -= 1
-        elif pmDir == 'right':
-            x += 1
-        elif pmDir == 'down':
-            y += 1
-        elif pmDir == 'left':
-            x -= 1
+    if yellow.comible:
+        tempx = x -int(yellow.x/gridW)
+        tempy = y -int(yellow.y/gridH)
+        if tempx>0 and tempy>0:
+            x, y = getnearestNode(0,0)
+        elif tempx>0 and tempy<=0:
+            x, y = getnearestNode(0, len(mapGrid))
+        elif tempx<=0 and tempy>0:
+            x, y = getnearestNode(len(mapGrid[0]), 0)
+        else:
+            x, y = getnearestNode(len(mapGrid[0]), len(mapGrid))
+    elif yellow.standby:
+        x, y = getnearestNode(0, len(mapGrid))
+    else:
+        if pmDir is not None and mapGraph.getNode(x, y).getNeighbors()[pmDir] is not None:
+            if pmDir == 'up':
+                y -= 1
+            elif pmDir == 'right':
+                x += 1
+            elif pmDir == 'down':
+                y += 1
+            elif pmDir == 'left':
+                x -= 1
     if debug==1: pygame.draw.line(DISPLAYSURF, GREEN, [int(yellow.x/gridW)* gridW, int(yellow.y/gridH)* gridH+(gridH/2)], [x* gridW +gridW*2,y* gridH+(gridH/2)], 5)
     return x, y
 
@@ -667,22 +714,36 @@ def cyanTarget():
     global debug
     x, y = pacman.prevX, pacman.prevY
     pmDir = pacman.currDir
-    if pmDir is not None and mapGraph.getNode(x, y).getNeighbors()[pmDir] is not None:
-        if pmDir == 'up':
-            y -= 1
-        elif pmDir == 'right':
-            x += 1
-        elif pmDir == 'down':
-            y += 1
-        elif pmDir == 'left':
-            x -= 1
+    if cyan.comible:
+        tempx = x -int(cyan.x/gridW)
+        tempy = y -int(cyan.y/gridH)
+        if tempx>0 and tempy>0:
+            x, y = getnearestNode(0,0)
+        elif tempx>0 and tempy<=0:
+            x, y = getnearestNode(0, len(mapGrid))
+        elif tempx<=0 and tempy>0:
+            x, y = getnearestNode(len(mapGrid[0]), 0)
+        else:
+            x, y = getnearestNode(len(mapGrid[0]), len(mapGrid))
+    elif cyan.standby:
+        x, y = getnearestNode(len(mapGrid[0]), 0)
+    else:
+        if pmDir is not None and mapGraph.getNode(x, y).getNeighbors()[pmDir] is not None:
+            if pmDir == 'up':
+                y -= 1
+            elif pmDir == 'right':
+                x += 1
+            elif pmDir == 'down':
+                y += 1
+            elif pmDir == 'left':
+                x -= 1
+            else:
+                x, y = getnearestNode(x, y)
+        tempx, tempy = (x)+(x-int(red.x/gridW)), (y)+(y-int(red.y/gridH))
+        if mapGraph.getNode(tempx, tempy) is not None:
+            x, y = tempx, tempy
         else:
             x, y = getnearestNode(x, y)
-    tempx, tempy = (x)+(x-int(red.x/gridW)), (y)+(y-int(red.y/gridH))
-    if mapGraph.getNode(tempx, tempy) is not None:
-        x, y = tempx, tempy
-    else:
-        x, y = getnearestNode(x, y)
     #print('Blinky: '+str([int(red.x/gridW),int(red.y/gridH)])+' Pacman: '+str([pacman.prevX, pacman.prevY])+' Inky: '+str([x,y]))
     if debug==1: pygame.draw.line(DISPLAYSURF, CYAN, [int(cyan.x/gridW)* gridW, int(cyan.y/gridH)* gridH+(gridH/2)], [x* gridW +gridW*2,y* gridH+(gridH/2)], 5)
     return x, y
@@ -692,13 +753,7 @@ def orangeTarget():
     x, y = pacman.prevX, pacman.prevY
     tempx = x -int(orange.x/gridW)
     tempy = y -int(orange.y/gridH)
-    distance = int(math.sqrt(((x -int(orange.x/gridW))**2)+((y-int(orange.y/gridH))**2)))
-    runaway
-    if distance<8:
-        runaway=True
-    if distance>12:
-        runaway=False
-    if runaway:
+    if orange.comible:
         if tempx>0 and tempy>0:
             x, y = getnearestNode(0,0)
         elif tempx>0 and tempy<=0:
@@ -707,6 +762,24 @@ def orangeTarget():
             x, y = getnearestNode(len(mapGrid[0]), 0)
         else:
             x, y = getnearestNode(len(mapGrid[0]), len(mapGrid))
+    elif orange.standby:
+        x, y = getnearestNode(len(mapGrid[0]), len(mapGrid))
+    else:
+        distance = int(math.sqrt(((x -int(orange.x/gridW))**2)+((y-int(orange.y/gridH))**2)))
+        runaway
+        if distance<8:
+            runaway=True
+        if distance>12:
+            runaway=False
+        if runaway:
+            if tempx>0 and tempy>0:
+                x, y = getnearestNode(0,0)
+            elif tempx>0 and tempy<=0:
+                x, y = getnearestNode(0, len(mapGrid))
+            elif tempx<=0 and tempy>0:
+                x, y = getnearestNode(len(mapGrid[0]), 0)
+            else:
+                x, y = getnearestNode(len(mapGrid[0]), len(mapGrid))
     if debug==1: pygame.draw.line(DISPLAYSURF, ORANGE, [int(orange.x/gridW)* gridW, int(orange.y/gridH)* gridH+(gridH/2)], [x* gridW +gridW*2,y* gridH+(gridH/2)], 5)
     return x, y
     
@@ -729,7 +802,9 @@ def updateSpritePAC():
     return sprite_pacman
 
 def updateSpriteGHOST(ghost,name):
-    if(ghost.currDir=='left'):
+    if ghost.comible:
+        sprite = [spritesheet.parse_sprite('frightened1.png'), spritesheet.parse_sprite('frightened2.png')]
+    elif(ghost.currDir=='left'):
         sprite = [spritesheet.parse_sprite(name+'_left1.png'), spritesheet.parse_sprite(name+'_left2.png')]
     elif(ghost.currDir=='down'):
         sprite = [spritesheet.parse_sprite(name+'_down1.png'), spritesheet.parse_sprite(name+'_down2.png')]   
@@ -794,6 +869,7 @@ def main():
     yellow.transpose()
     cyan.transpose()
     orange.transpose()
+    pygame.time.set_timer(pygame.USEREVENT+1, 7000)
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
