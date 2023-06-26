@@ -18,6 +18,8 @@ pygame.init()
 FPS = 60
 FramePerSec = pygame.time.Clock()
 index=0
+ghostIndex= 0
+runaway=False
 
 # Predefined some colors
 BLUE = (0, 0, 255)
@@ -27,6 +29,7 @@ BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 YELLOW = (255, 255, 0)
 CYAN = (0,200,200)
+ORANGE = (255, 165, 0)
 
 # Screen information
 SCREEN_WIDTH = 800
@@ -344,8 +347,8 @@ class Ghost():
         self.x = self.x * gridW + (gridW/2)
         self.y = self.y * gridH + (gridH/2)
 
-    def draw(self):
-        pygame.draw.rect(DISPLAYSURF, self.color, pygame.Rect(self.x, self.y, pacmanW, pacmanH))
+    def draw(self, sprites):
+        DISPLAYSURF.blit(sprites, (self.x, self.y))
 
 
 # Level related globals
@@ -594,10 +597,13 @@ rx, ry = -1, -1
 
 
 def redTarget():
+    global debug
+    if debug==1: pygame.draw.line(DISPLAYSURF, RED, [int(red.x/gridW)* gridW, int(red.y/gridH)* gridH+(gridH/2)], [pacman.prevX* gridW +gridW*2,pacman.prevY* gridH+(gridH/2)], 5)
     return pacman.prevX, pacman.prevY
 
-
+###################################Ghost Targets#####################################################
 def pinkTarget():
+    global debug
     x, y = pacman.prevX, pacman.prevY
     pmDir = pacman.currDir
     if pmDir is not None and mapGraph.getNode(x, y).getNeighbors()[pmDir] is not None:
@@ -609,10 +615,11 @@ def pinkTarget():
             y += 1
         elif pmDir == 'left':
             x -= 1
-
+    if debug==1: pygame.draw.line(DISPLAYSURF, GREEN, [int(yellow.x/gridW)* gridW, int(yellow.y/gridH)* gridH+(gridH/2)], [x* gridW +gridW*2,y* gridH+(gridH/2)], 5)
     return x, y
 
 def cyanTarget():
+    global debug
     x, y = pacman.prevX, pacman.prevY
     pmDir = pacman.currDir
     if pmDir is not None and mapGraph.getNode(x, y).getNeighbors()[pmDir] is not None:
@@ -624,16 +631,44 @@ def cyanTarget():
             y += 1
         elif pmDir == 'left':
             x -= 1
+        else:
+            x, y = getnearestNode(x, y)
     tempx, tempy = (x)+(x-int(red.x/gridW)), (y)+(y-int(red.y/gridH))
     if mapGraph.getNode(tempx, tempy) is not None:
         x, y = tempx, tempy
-        print('Blinky: '+str([int(red.x/gridW),int(red.y/gridH)])+' Pacman: '+str([pacman.prevX, pacman.prevY])+' Inky: '+str([x,y]))
+    else:
+        x, y = getnearestNode(x, y)
+    #print('Blinky: '+str([int(red.x/gridW),int(red.y/gridH)])+' Pacman: '+str([pacman.prevX, pacman.prevY])+' Inky: '+str([x,y]))
+    if debug==1: pygame.draw.line(DISPLAYSURF, CYAN, [int(cyan.x/gridW)* gridW, int(cyan.y/gridH)* gridH+(gridH/2)], [x* gridW +gridW*2,y* gridH+(gridH/2)], 5)
     return x, y
 
 def orangeTarget():
-    pass
+    global runaway, debug
+    x, y = pacman.prevX, pacman.prevY
+    tempx = x -int(orange.x/gridW)
+    tempy = y -int(orange.y/gridH)
+    distance = int(math.sqrt(((x -int(orange.x/gridW))**2)+((y-int(orange.y/gridH))**2)))
+    runaway
+    if distance<8:
+        runaway=True
+    if distance>12:
+        runaway=False
+    if runaway:
+        if tempx>0 and tempy>0:
+            x, y = getnearestNode(0,0)
+        elif tempx>0 and tempy<=0:
+            x, y = getnearestNode(0, len(mapGrid))
+        elif tempx<=0 and tempy>0:
+            x, y = getnearestNode(len(mapGrid[0]), 0)
+        else:
+            x, y = getnearestNode(len(mapGrid[0]), len(mapGrid))
+    if debug==1: pygame.draw.line(DISPLAYSURF, ORANGE, [int(orange.x/gridW)* gridW, int(orange.y/gridH)* gridH+(gridH/2)], [x* gridW +gridW*2,y* gridH+(gridH/2)], 5)
+    return x, y
+    
+####################################################################################################
+########################################## Updating Sprites #######################################################
 # def to update the sprites used by pac-man
-def updateSprite():
+def updateSpritePAC():
     if(pacman.currDir=='left'):
         sprite_pacman = [spritesheet.parse_sprite('pac-man_left1.png'), spritesheet.parse_sprite('pac-man_left2.png'),
                  spritesheet.parse_sprite('pac-man_full.png'), spritesheet.parse_sprite('pac-man_left2.png')]
@@ -648,23 +683,72 @@ def updateSprite():
                  spritesheet.parse_sprite('pac-man_full.png'), spritesheet.parse_sprite('pac-man_right2.png')]
     return sprite_pacman
 
+def updateSpriteGHOST(ghost,name):
+    if(ghost.currDir=='left'):
+        sprite = [spritesheet.parse_sprite(name+'_left1.png'), spritesheet.parse_sprite(name+'_left2.png')]
+    elif(ghost.currDir=='down'):
+        sprite = [spritesheet.parse_sprite(name+'_down1.png'), spritesheet.parse_sprite(name+'_down2.png')]   
+    elif(ghost.currDir=='up'):
+        sprite = [spritesheet.parse_sprite(name+'_up1.png'), spritesheet.parse_sprite(name+'_up2.png')]
+    else:
+        sprite = [spritesheet.parse_sprite(name+'_right1.png'), spritesheet.parse_sprite(name+'_right2.png')]
+    return sprite
+
 spritesheet = Spritesheet('sprites/pacman.png')
 
+def getnearestNode(x, y):
+    nearnode= False
+    cont=1
+    while nearnode is False:
+        if mapGraph.getNode(x+cont,y) is not None:
+            nearnode=True
+            return x+cont, y
+        elif mapGraph.getNode(x, cont+y) is not None:
+            nearnode=True
+            return x, y+cont
+        elif mapGraph.getNode(x-cont, y) is not None:
+            nearnode=True
+            return x-cont, y
+        elif mapGraph.getNode(x, y-cont) is not None:
+            nearnode=True
+            return x, y-cont
+        elif mapGraph.getNode(x+cont, cont+y) is not None:
+            nearnode=True
+            return x+cont, y+cont
+        elif mapGraph.getNode(x-cont, y-cont) is not None:
+            nearnode=True
+            return x-cont, y-cont
+        elif mapGraph.getNode(x+cont, y-cont) is not None:
+            nearnode=True
+            return x+cont, y-cont
+        elif mapGraph.getNode(x-cont, y+cont) is not None:
+            nearnode=True
+            return x-cont, y+cont
+        else:
+            cont= cont+1
+                    
 
 def main():
-    global index
-    global sprite_pacman
-    global red
+    global index, ghostIndex, debug
+    global sprite_pacman, sprite_red, sprite_green, sprite_cyan, sprite_orange
+    global red, yellow, cyan, orange
+    debug=0
     sprite_pacman = [spritesheet.parse_sprite('pac-man_right1.png'), spritesheet.parse_sprite('pac-man_right2.png'),
                  spritesheet.parse_sprite('pac-man_full.png'), spritesheet.parse_sprite('pac-man_right2.png')]
+    sprite_red = [spritesheet.parse_sprite('red_right1.png'), spritesheet.parse_sprite('red_right2.png')]
+    sprite_green = [spritesheet.parse_sprite('green_right1.png'), spritesheet.parse_sprite('green_right2.png')]
+    sprite_cyan = [spritesheet.parse_sprite('cyan_right1.png'), spritesheet.parse_sprite('cyan_right2.png')]
+    sprite_orange = [spritesheet.parse_sprite('orange_right1.png'), spritesheet.parse_sprite('orange_right2.png')]
     loadMap('./levels/level3.txt')
     createMapGraph(findFirstPill())
     red = Ghost(4, 2, RED, 1, 2, redTarget)
     yellow = Ghost(54, 2, GREEN, 1, 2, pinkTarget)
     cyan = Ghost(54, 4, CYAN, 1, 2, cyanTarget)
+    orange = Ghost(4, 4, ORANGE, 1, 2, orangeTarget)
     red.transpose()
     yellow.transpose()
     cyan.transpose()
+    orange.transpose()
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -672,17 +756,24 @@ def main():
                 sys.exit()
 
         DISPLAYSURF.fill(BLACK)
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_d]:
+            if debug==0: debug=1
+            else: debug=0
         drawMap()
         red.move()
         yellow.move()
         cyan.move()
-        red.draw()
-        yellow.draw()
-        cyan.draw()
+        orange.move()
+        red.draw(updateSpriteGHOST(red,'red')[ghostIndex])
+        yellow.draw(updateSpriteGHOST(yellow,'green')[ghostIndex])
+        cyan.draw(updateSpriteGHOST(cyan,'cyan')[ghostIndex])
+        orange.draw(updateSpriteGHOST(orange,'orange')[ghostIndex])
         pacman.changeDir()
         pacman.move()
-        pacman.draw(updateSprite()[index])
+        pacman.draw(updateSpritePAC()[index])
         index = (index+1) % len(sprite_pacman)
+        ghostIndex = (ghostIndex+1)% len(sprite_red)
 
         # for node in mapGraph.nodes:
         #     pygame.draw.rect(DISPLAYSURF, RED, pygame.Rect(node.x * gridW+(gridW/2), node.y * gridH+(gridH/2), pointW*4, pointH*2))
