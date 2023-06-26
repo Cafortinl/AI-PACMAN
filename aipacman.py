@@ -247,13 +247,13 @@ class Pacman():
             yellow.superPildora()
 
     def comerFantasma(self):
-        if (red.x == self.x and red.y == self.y) and red.comible == True:
+        if (int(red.x/gridW) == int(self.x/gridW) and int(red.y/gridH) == int(self.y/gridH)) and red.comible == True:
             red.comido()
-        if (cyan.x == self.x and cyan.y == self.y) and cyan.comible == True:
+        if (int(cyan.x/gridW) == int(self.x/gridW) and int(cyan.y/gridH) == int(self.y/gridH)) and cyan.comible == True:
             cyan.comido()
-        if (orange.x == self.x and orange.y == self.y) and orange.comible == True:
+        if (int(orange.x/gridW) == int(self.x/gridW) and int(orange.y/gridH) == int(self.y/gridH)) and orange.comible == True:
             orange.comido()
-        if (yellow.x == self.x and yellow.y == self.y) and yellow.comible == True:
+        if (int(yellow.x/gridW) == int(self.x/gridW) and int(yellow.y/gridH) == int(self.y/gridH)) and yellow.comible == True:
             yellow.comido()
 
 class Ghost():
@@ -268,8 +268,11 @@ class Ghost():
         self.targetfn = target
         self.comible = False
         self.standby = False
+        self.whitefright = False
+        self.eaten = False
         self.frighttime = pygame.time.get_ticks()
         self.standtime = pygame.time.get_ticks()
+        self.eatentime = pygame.time.get_ticks()
 
     def move(self):
         global pacman
@@ -278,15 +281,23 @@ class Ghost():
         if self.comible: speed= 1.5
         else: speed =3
         fright = ((pygame.time.get_ticks()-self.frighttime)/1000)
+        #check if frightened mode is over
+        if 4<fright and self.comible:
+            self.whitefright = True
         if 7< fright:
+            self.whitefright = False
             self.comible =False
-             
+        dead = ((pygame.time.get_ticks()-self.eatentime)/1000)
+        if 7< dead:
+            self.eaten = False
+        #cycles between pursuit and standby mode     
         stand = ((pygame.time.get_ticks()-self.standtime)/1000)
         if 15< stand:
             self.standby = True
         if 18< stand:
             self.standby = False
-            self.standtime = pygame.time.get_ticks()   
+            self.standtime = pygame.time.get_ticks() 
+        #end of mode cycling of ghosts      
         px, py = self.targetfn()
 
         if euclideanDistance(int(self.x/gridW), px, int(self.y/gridH), py) > 5:
@@ -410,7 +421,8 @@ class Ghost():
         self.comible = False
 
     def comido(self): 
-        self.color = WHITE
+        self.eaten = True
+        self.eatentime = pygame.time.get_ticks()
 
 
 # Level related globals
@@ -661,7 +673,9 @@ rx, ry = -1, -1
 
 def redTarget():
     global debug
-    if red.comible:
+    if red.eaten:
+        x, y = 28, 12
+    elif red.comible:
         x, y = pacman.prevX, pacman.prevY
         tempx = x -int(red.x/gridW)
         tempy = y -int(red.y/gridH)
@@ -684,7 +698,9 @@ def pinkTarget():
     global debug
     x, y = pacman.prevX, pacman.prevY
     pmDir = pacman.currDir
-    if yellow.comible:
+    if yellow.eaten:
+        x, y = 28, 12
+    elif yellow.comible:
         tempx = x -int(yellow.x/gridW)
         tempy = y -int(yellow.y/gridH)
         if tempx>0 and tempy>0:
@@ -714,7 +730,9 @@ def cyanTarget():
     global debug
     x, y = pacman.prevX, pacman.prevY
     pmDir = pacman.currDir
-    if cyan.comible:
+    if cyan.eaten:
+        x, y = 28, 12
+    elif cyan.comible:
         tempx = x -int(cyan.x/gridW)
         tempy = y -int(cyan.y/gridH)
         if tempx>0 and tempy>0:
@@ -753,7 +771,9 @@ def orangeTarget():
     x, y = pacman.prevX, pacman.prevY
     tempx = x -int(orange.x/gridW)
     tempy = y -int(orange.y/gridH)
-    if orange.comible:
+    if orange.eaten:
+        x, y = 28, 12
+    elif orange.comible:
         if tempx>0 and tempy>0:
             x, y = getnearestNode(0,0)
         elif tempx>0 and tempy<=0:
@@ -802,7 +822,18 @@ def updateSpritePAC():
     return sprite_pacman
 
 def updateSpriteGHOST(ghost,name):
-    if ghost.comible:
+    if ghost.eaten:
+        if(ghost.currDir=='left'):
+            sprite = [spritesheet.parse_sprite('eyes_left.png'), spritesheet.parse_sprite('eyes_left.png')]
+        elif(ghost.currDir=='down'):
+            sprite = [spritesheet.parse_sprite('eyes_down.png'), spritesheet.parse_sprite('eyes_down.png')]  
+        elif(ghost.currDir=='up'):
+            sprite = [spritesheet.parse_sprite('eyes_up.png'), spritesheet.parse_sprite('eyes_up.png')]
+        else:
+            sprite = [spritesheet.parse_sprite('eyes_right.png'), spritesheet.parse_sprite('eyes_right.png')]
+    elif ghost.whitefright:
+        sprite = [spritesheet.parse_sprite('frightened1.png'), spritesheet.parse_sprite('friighttimer2.png')]
+    elif ghost.comible:
         sprite = [spritesheet.parse_sprite('frightened1.png'), spritesheet.parse_sprite('frightened2.png')]
     elif(ghost.currDir=='left'):
         sprite = [spritesheet.parse_sprite(name+'_left1.png'), spritesheet.parse_sprite(name+'_left2.png')]
@@ -895,6 +926,7 @@ def main():
         pacman.draw(updateSpritePAC()[index])
         index = (index+1) % len(sprite_pacman)
         ghostIndex = (ghostIndex+1)% len(sprite_red)
+        print([int(pacman.x/gridW), int(pacman.y/gridH)])
         pacman.tunel()
         red.tunel()
         yellow.tunel()
